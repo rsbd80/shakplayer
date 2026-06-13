@@ -3,29 +3,38 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>RS Shaka Player</title>
+  <title>RS Shaka Player Debug</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.7.11/shaka-player.ui.min.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.7.11/controls.min.css">
   <style>
     html, body { margin: 0; padding: 0; background: #000; width: 100%; height: 100%; overflow: hidden; }
     .shaka-video-container { width: 100%; height: 100%; }
     video { width: 100%; height: 100%; object-fit: contain; }
+    #debug { position: fixed; bottom: 10px; left: 10px; background: rgba(0,0,0,0.7); color: lime; font-family: monospace; font-size: 12px; padding: 5px; z-index: 9999; max-width: 80%; }
   </style>
 </head>
 <body>
   <div class="shaka-video-container" data-shaka-player-container>
-    <video autoplay muted playsinline id="video"></video>  <!-- muted যোগ করা হয়েছে -->
+    <video autoplay muted playsinline id="video"></video>
   </div>
-  <script>
-    document.addEventListener("DOMContentLoaded", async () => {
-      shaka.polyfill.installAll();
+  <div id="debug">Initializing...</div>
 
+  <script>
+    (async () => {
+      const debugDiv = document.getElementById('debug');
+      function log(msg) {
+        console.log(msg);
+        debugDiv.innerHTML += '<br>' + msg;
+      }
+
+      // পলিফিল ও সাপোর্ট চেক
+      shaka.polyfill.installAll();
       if (!shaka.Player.isBrowserSupported()) {
-        alert("Shaka Player is not supported in this browser!");
+        log('ERROR: Browser not supported!');
         return;
       }
 
-      const video = document.getElementById("video");
+      const video = document.getElementById('video');
       const container = document.querySelector('.shaka-video-container');
       const player = new shaka.Player(video);
       const ui = new shaka.ui.Overlay(player, container, video);
@@ -34,27 +43,45 @@
         controlPanelElements: ['play_pause', 'mute', 'volume', 'spacer', 'quality', 'fullscreen']
       });
 
+      // আরও ভালো রিট্রাই ও DRM কনফিগ (প্রয়োজনে)
       player.configure({
-        manifest: { retryParameters: { maxAttempts: 3 } },
-        // ডিআরএম প্রয়োজন হলে নিচের অংশ আনকমেন্ট করুন:
-        // drm: { servers: { 'com.widevine.alpha': 'YOUR_LICENSE_URL' } }
+        manifest: { retryParameters: { maxAttempts: 3, timeout: 10000 } },
+        streaming: { retryParameters: { maxAttempts: 3, timeout: 10000 } }
+      });
+
+      // ইভেন্ট লিসেনার
+      player.addEventListener('error', (event) => {
+        const error = event.detail;
+        log(`PLAYER ERROR: ${error.code} - ${error.message}`);
       });
 
       const params = new URLSearchParams(window.location.search);
-      const streamUrl = params.get("url");
+      let streamUrl = params.get('url');
+      
+      // ইউআরএল ডিকোড করা (যদি এনকোড করা থাকে)
+      if (streamUrl) {
+        try {
+          streamUrl = decodeURIComponent(streamUrl);
+        } catch(e) {}
+        log(`URL from query: ${streamUrl}`);
+      } else {
+        log('ERROR: No "url" parameter found in query string.');
+        alert('Please add ?url=YOUR_STREAM_URL');
+        return;
+      }
 
       try {
-        if (streamUrl) {
-          await player.load(streamUrl);
-          console.log("Video loaded successfully!");
-        } else {
-          alert("Error: No stream URL provided!");
-        }
+        log('Loading stream...');
+        await player.load(streamUrl);
+        log('SUCCESS: Video loaded and playing!');
+        // ভলিউম আনমিউট করতে পারেন (অটোপ্লের জন্য মিউটেড ছিল)
+        video.muted = false;
       } catch (error) {
-        console.error("Error Code:", error.code, error);
-        alert(`Stream load failed! Error: ${error.message || error.code}`);
+        log(`LOAD FAILED: ${error.code || 'unknown'} - ${error.message || error}`);
+        console.error(error);
+        alert(`Failed to load:\n${error.message || error}`);
       }
-    });
+    })();
   </script>
 </body>
 </html>
