@@ -1,12 +1,16 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Dynamic Player</title>
-    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <title>Full Screen Player</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/plyr@3.6.2/dist/plyr.css" />
     <style>
-        body { background: #000; margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; height: 100vh; }
-        #player { width: 100%; max-width: 800px; }
+        body { background: #000; margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
+        
+        /* পুরো স্ক্রিন জুড়ে ভিডিওর জন্য */
+        #player { width: 100vw; height: 100vh; object-fit: cover; }
+        
+        .plyr--video { height: 100vh; width: 100vw; }
     </style>
 </head>
 <body>
@@ -19,24 +23,31 @@
 <script src="https://cdn.jsdelivr.net/npm/hls.js@1.1.4/dist/hls.min.js"></script>
 
 <script>
-    // URL থেকে url প্যারামিটারটি নেওয়া
     const urlParams = new URLSearchParams(window.location.search);
     const videoSrc = urlParams.get('url');
-    
-    const video = document.querySelector('video');
-    const source = video.querySelector('source');
-    
+    const video = document.getElementById('player');
+
     if (videoSrc) {
-        source.src = videoSrc;
+        video.querySelector('source').src = videoSrc;
     }
 
     document.addEventListener("DOMContentLoaded", () => {
-        const player = new Plyr(video);
+        const player = new Plyr(video, {
+            fullscreen: { enabled: true, fallback: true, iosNative: true }
+        });
+
         if (Hls.isSupported() && videoSrc) {
             const hls = new Hls();
             hls.loadSource(videoSrc);
             hls.attachMedia(video);
         }
+
+        // ফুলস্ক্রিনে ক্লিক করলে ল্যান্ডস্কেপ করার চেষ্টা
+        player.on('enterfullscreen', () => {
+            if (screen.orientation && screen.orientation.lock) {
+                screen.orientation.lock('landscape').catch(() => {});
+            }
+        });
     });
 </script>
 
