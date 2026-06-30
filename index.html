@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>Full Player</title>
+    <title>Full Screen Video</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/plyr@3.6.2/dist/plyr.css" />
     <style>
         body, html { 
@@ -11,13 +11,18 @@
             width: 100%; height: 100%; 
             background: #000; overflow: hidden; 
         }
-        /* ভিডিও কন্টেইনার এবং ভিডিওর আকার নির্ধারণ */
-        .plyr--video { width: 100vw; height: 100vh; }
+        
+        /* প্লেয়ার এবং ভিডিওর সাইজ জোরপূর্বক পুরো স্ক্রিন করা */
+        .plyr--video { 
+            width: 100vw !important; 
+            height: 100vh !important; 
+        }
         
         video { 
-            width: 100%; height: 100%; 
-            /* ভিডিও কাটবে না এবং অনুপাত ঠিক রেখে স্ক্রিনে ফিট হবে */
-            object-fit: contain; 
+            width: 100% !important; 
+            height: 100% !important; 
+            /* fill ব্যবহার করলে ভিডিও কোনো ফাঁকা জায়গা রাখবে না এবং টেনে স্ক্রিন পূর্ণ করবে */
+            object-fit: fill !important; 
             background-color: #000;
         }
     </style>
@@ -48,13 +53,6 @@
             hls.loadSource(videoSrc);
             hls.attachMedia(video);
         }
-
-        // ফুলস্ক্রিন হলে ল্যান্ডস্কেপ মোড লক করা
-        player.on('enterfullscreen', () => {
-            if (screen.orientation && screen.orientation.lock) {
-                screen.orientation.lock('landscape').catch(() => {});
-            }
-        });
     });
 </script>
 </body>
