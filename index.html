@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>Fullscreen Video with Auto-Rotate</title>
+    <title>Fullscreen Video with Rotation</title>
     <!-- Plyr CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/plyr@3.6.2/dist/plyr.css" />
     <style>
-        /* রিসেট – পুরো স্ক্রিন জুড়ে ভিডিও */
+        /* রিসেট – সব কিছু পুরো স্ক্রিন */
         * {
             margin: 0;
             padding: 0;
@@ -20,24 +20,23 @@
             overflow: hidden;
         }
 
-        /* Plyr কন্টেইনারকে পুরো স্ক্রিন করি */
+        /* Plyr কন্টেইনার পুরো স্ক্রিন */
         .plyr--video {
             width: 100vw !important;
             height: 100vh !important;
         }
 
-        /* ভিডিও এলিমেন্ট – cover + রোটেশন প্রস্তুত */
+        /* ভিডিও এলিমেন্ট – কভার + রোটেশন প্রস্তুত */
         #player {
             width: 100% !important;
             height: 100% !important;
-            object-fit: cover !important;  /* ফাঁকা জায়গা না রাখে */
+            object-fit: cover !important;   /* ফাঁকা জায়গা থাকবে না */
             background: #000;
-            /* রোটেশন transform-এ প্রয়োগ হবে (জাভাস্ক্রিপ্ট) */
             transform-origin: center center;
-            transition: transform 0.25s ease;
+            transition: transform 0.2s ease;
         }
 
-        /* Plyr-এর কন্ট্রোল ওভারলে ঠিক রাখতে (জরুরি নয়) */
+        /* কন্ট্রোল ওভারলে ঠিক রাখা */
         .plyr__controls {
             z-index: 10;
         }
@@ -49,7 +48,7 @@
         <source type="application/vnd.apple.mpegurl" src="" />
     </video>
 
-    <!-- Plyr ও HLS.js -->
+    <!-- লাইব্রেরি -->
     <script src="https://cdn.jsdelivr.net/npm/plyr@3.6.12/dist/plyr.min.js">
     </script>
     <script src="https://cdn.jsdelivr.net/npm/hls.js@1.1.4/dist/hls.min.js">
@@ -59,7 +58,7 @@
         (function() {
             'use strict';
 
-            // ১. URL থেকে ভিডিও সোর্স পড়ি
+            // ---------- ১. URL থেকে সোর্স পড়ি ----------
             const urlParams = new URLSearchParams(window.location.search);
             const videoSrc = urlParams.get('url');
             const video = document.getElementById('player');
@@ -69,7 +68,7 @@
                 video.load();
             }
 
-            // ২. Plyr ইনিশিয়ালাইজ
+            // ---------- ২. Plyr ইনিশিয়ালাইজ ----------
             let player;
             document.addEventListener('DOMContentLoaded', function() {
                 player = new Plyr(video, {
@@ -79,7 +78,7 @@
                     ]
                 });
 
-                // ৩. HLS সাপোর্ট
+                // ---------- ৩. HLS সাপোর্ট ----------
                 if (Hls.isSupported() && videoSrc) {
                     const hls = new Hls();
                     hls.loadSource(videoSrc);
@@ -88,30 +87,28 @@
                         video.play().catch(function() {});
                     });
                 } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-                    // Safari native HLS
                     video.src = videoSrc;
                 }
 
-                // ৪. প্রাথমিক রোটেশন সেট করি (DOM লোড হওয়ার পর)
-                setTimeout(applyCurrentRotation, 400);
+                // ---------- ৪. প্রাথমিক রোটেশন সেট ----------
+                setTimeout(applyCurrentRotation, 500);
             });
 
-            // ---------- রোটেশন ফাংশন ----------
+            // ---------- ৫. রোটেশন ফাংশন ----------
             function applyRotation(angle) {
                 if (!video) return;
-                // ভিডিও এলিমেন্টে সরাসরি রোটেশন দিচ্ছি – Plyr তা মানিয়ে নেয়
                 video.style.transform = 'rotate(' + angle + 'deg)';
-                // cover ঠিক রাখতে
                 video.style.objectFit = 'cover';
+                console.log('🔄 রোটেশন প্রয়োগ: ' + angle + '°');
             }
 
-            // বর্তমান ডিভাইস ওরিয়েন্টেশন থেকে অ্যাঙ্গেল বের করি
+            // ---------- ৬. ওরিয়েন্টেশন ডিটেক্ট (সব পদ্ধতি) ----------
             function getOrientationAngle() {
-                // ১. window.orientation (iOS, পুরনো Android)
-                if (typeof window.orientation !== 'undefined') {
+                // পদ্ধতি ১: window.orientation (iOS, পুরনো Android)
+                if (typeof window.orientation !== 'undefined' && window.orientation !== null) {
                     return window.orientation; // 0, 90, -90, 180
                 }
-                // ২. screen.orientation API (আধুনিক)
+                // পদ্ধতি ২: screen.orientation API (আধুনিক)
                 if (screen.orientation) {
                     var type = screen.orientation.type;
                     if (type.includes('portrait-primary')) return 0;
@@ -119,49 +116,55 @@
                     if (type.includes('landscape-primary')) return 90;
                     if (type.includes('landscape-secondary')) return -90;
                 }
-                // ৩. window.innerWidth/Height দিয়ে অনুমান (শেষ উপায়)
+                // পদ্ধতি ৩: width/height তুলনা (ফ্যালব্যাক)
                 if (window.innerWidth > window.innerHeight) {
                     return 90; // ল্যান্ডস্কেপ
                 } else {
                     return 0; // পোর্ট্রেট
                 }
-                return 0;
             }
 
-            // রোটেশন আপডেট ফাংশন (কল করলেই রিফ্রেশ)
+            // রোটেশন আপডেট (কল করলেই রিফ্রেশ)
             function applyCurrentRotation() {
                 var angle = getOrientationAngle();
                 applyRotation(angle);
-                console.log('🔄 ভিডিও ঘোরানো হয়েছে: ' + angle + '°');
             }
 
-            // ৫. ইভেন্ট লিসেনার – ওরিয়েন্টেশন পরিবর্তনে
+            // ---------- ৭. ইভেন্ট লিসেনার ----------
+            // ওরিয়েন্টেশন চেঞ্জ (পুরনো)
             window.addEventListener('orientationchange', function() {
-                // কিছু ডিভাইসে সাইজ সেট হতে সময় লাগে, তাই একটু দেরি
                 setTimeout(applyCurrentRotation, 300);
             });
 
-            // ৬. screen.orientation পরিবর্তন (নতুন API)
+            // ওরিয়েন্টেশন চেঞ্জ (নতুন API)
             if (screen.orientation) {
                 screen.orientation.addEventListener('change', function() {
                     setTimeout(applyCurrentRotation, 300);
                 });
             }
 
-            // ৭. উইন্ডো রিসাইজ (ডেস্কটপে ডিসপ্লে রোটেট করলেও)
+            // উইন্ডো রিসাইজ (ডেস্কটপ বা ডিভাইস রোটেট)
             window.addEventListener('resize', function() {
                 applyCurrentRotation();
             });
 
-            // ৮. ভিডিও মেটাডেটা লোড হলে আবার চেক (নিশ্চিত)
+            // ভিডিও মেটাডাটা লোড হলে
             video.addEventListener('loadedmetadata', function() {
                 applyCurrentRotation();
             });
 
-            // ৯. ম্যানুয়ালি কল করার জন্য গ্লোবাল ফাংশন (ডিবাগে)
+            // ফুলস্ক্রিন পরিবর্তন হলে (ওরিয়েন্টেশন চেঞ্জ কাভার করতে)
+            document.addEventListener('fullscreenchange', function() {
+                setTimeout(applyCurrentRotation, 200);
+            });
+            document.addEventListener('webkitfullscreenchange', function() {
+                setTimeout(applyCurrentRotation, 200);
+            });
+
+            // ---------- ৮. ডিবাগের জন্য গ্লোবাল ----------
             window.rotateVideo = applyCurrentRotation;
 
-            console.log('✅ অটো-রোটেশন সক্রিয়। ডিভাইস ঘোরান দেখুন।');
+            console.log('✅ অটো-রোটেশন সক্রিয়। ডিভাইস ঘোরান বা ফুলস্ক্রিন করুন।');
         })();
     </script>
 </body>
