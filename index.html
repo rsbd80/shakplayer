@@ -14,7 +14,13 @@
         * { margin:0; padding:0; box-sizing:border-box; }
         html, body { width:100%; height:100%; background:#000; overflow:hidden; font-family: 'Segoe UI', sans-serif; position: fixed; }
         
-        #player-wrapper { position: relative; width: 100%; height: 100%; overflow: hidden; background: #000; }
+        #player-wrapper { 
+            position: relative; 
+            width: 100%; 
+            height: 100%; 
+            overflow: hidden; 
+            background: #000; 
+        }
         
         #video-player { 
             width:100% !important; 
@@ -24,6 +30,17 @@
             left:0; 
             background: #000;
             object-fit: contain;
+        }
+
+        /* ফুলস্ক্রিন হলে ভিডিও পুরো স্ক্রিন কভার করবে */
+        #player-wrapper.fullscreen {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            z-index: 9999 !important;
+            background: #000;
         }
 
         /* কাস্টম কন্ট্রোলস */
@@ -39,14 +56,13 @@
             gap: 8px;
             opacity: 0;
             transition: opacity 0.3s ease;
+            pointer-events: none;
         }
 
-        #player-wrapper:hover #custom-controls {
-            opacity: 1;
-        }
-
+        #player-wrapper:hover #custom-controls,
         #custom-controls.active {
             opacity: 1;
+            pointer-events: auto;
         }
 
         .controls-row {
@@ -54,10 +70,15 @@
             align-items: center;
             gap: 15px;
             width: 100%;
+            background: rgba(0,0,0,0.5);
+            padding: 10px 15px;
+            border-radius: 12px;
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.1);
         }
 
         .control-btn {
-            background: rgba(255,255,255,0.15);
+            background: rgba(255,255,255,0.1);
             border: none;
             color: #fff;
             width: 40px;
@@ -69,12 +90,11 @@
             align-items: center;
             justify-content: center;
             transition: all 0.2s;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255,255,255,0.1);
+            flex-shrink: 0;
         }
 
         .control-btn:hover {
-            background: rgba(255,255,255,0.3);
+            background: rgba(255,255,255,0.25);
             transform: scale(1.05);
         }
 
@@ -83,6 +103,7 @@
             display: flex;
             align-items: center;
             gap: 12px;
+            min-width: 0;
         }
 
         #progress-bar {
@@ -93,7 +114,8 @@
             background: rgba(255,255,255,0.2);
             border-radius: 2px;
             outline: none;
-            transition: height 0.2s;
+            min-width: 20px;
+            cursor: pointer;
         }
 
         #progress-bar::-webkit-slider-thumb {
@@ -117,18 +139,20 @@
         }
 
         .time-display {
-            color: rgba(255,255,255,0.8);
+            color: rgba(255,255,255,0.9);
             font-size: 13px;
             font-weight: 500;
-            min-width: 100px;
+            min-width: 55px;
             text-align: center;
             font-variant-numeric: tabular-nums;
+            flex-shrink: 0;
         }
 
         .volume-container {
             display: flex;
             align-items: center;
             gap: 8px;
+            flex-shrink: 0;
         }
 
         #volume-slider {
@@ -139,6 +163,7 @@
             background: rgba(255,255,255,0.2);
             border-radius: 2px;
             outline: none;
+            cursor: pointer;
         }
 
         #volume-slider::-webkit-slider-thumb {
@@ -170,6 +195,7 @@
             cursor: pointer;
             outline: none;
             backdrop-filter: blur(10px);
+            flex-shrink: 0;
         }
 
         .quality-selector option {
@@ -301,26 +327,54 @@
             transform: scale(1.05);
         }
 
-        /* মোবাইল টাচ সাপোর্ট */
+        /* মোবাইল */
         @media (max-width: 768px) {
             .controls-row {
-                gap: 10px;
+                gap: 8px;
+                padding: 8px 12px;
             }
             .control-btn {
-                width: 35px;
-                height: 35px;
-                font-size: 14px;
+                width: 32px;
+                height: 32px;
+                font-size: 13px;
             }
             #volume-slider {
-                width: 50px;
+                width: 40px;
             }
             .time-display {
                 font-size: 11px;
-                min-width: 80px;
+                min-width: 45px;
             }
             .quality-selector {
                 font-size: 10px;
-                padding: 4px 10px;
+                padding: 4px 8px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .controls-row {
+                gap: 5px;
+                padding: 6px 8px;
+                flex-wrap: nowrap;
+            }
+            .control-btn {
+                width: 28px;
+                height: 28px;
+                font-size: 11px;
+            }
+            .time-display {
+                font-size: 10px;
+                min-width: 38px;
+            }
+            #volume-slider {
+                width: 30px;
+            }
+            .quality-selector {
+                font-size: 9px;
+                padding: 3px 6px;
+            }
+            .volume-container {
+                gap: 4px;
             }
         }
     </style>
@@ -341,10 +395,10 @@
         <div class="loading-text">Loading Stream...</div>
     </div>
 
-    <!-- ভিডিও এলিমেন্ট -->
+    <!-- ভিডিও -->
     <video id="video-player" playsinline></video>
 
-    <!-- কাস্টম কন্ট্রোলস -->
+    <!-- কন্ট্রোলস -->
     <div id="custom-controls">
         <div class="controls-row">
             <button class="control-btn" id="play-btn" title="Play/Pause">
@@ -377,10 +431,10 @@
 
 <script>
     (function() {
-        // URL প্যারামিটার থেকে স্ট্রিম লিঙ্ক নেওয়া
         const urlParams = new URLSearchParams(window.location.search);
         const streamSource = urlParams.get('url');
 
+        const wrapper = document.getElementById('player-wrapper');
         const video = document.getElementById('video-player');
         const loader = document.getElementById('loader');
         const playBtn = document.getElementById('play-btn');
@@ -397,10 +451,11 @@
         let isPlaying = false;
         let isMuted = false;
         let controlsTimeout = null;
+        let isFullscreen = false;
 
-        // ইউটিলিটি: টাইম ফরম্যাট
+        // টাইম ফরম্যাট
         function formatTime(seconds) {
-            if (isNaN(seconds)) return '00:00';
+            if (isNaN(seconds) || !isFinite(seconds)) return '00:00';
             const hrs = Math.floor(seconds / 3600);
             const mins = Math.floor((seconds % 3600) / 60);
             const secs = Math.floor(seconds % 60);
@@ -410,12 +465,10 @@
             return `${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
         }
 
-        // লোডার হাইড করা
         function hideLoader() {
             loader.classList.add('hide-now');
         }
 
-        // লোডার দেখানো (এরর হলে)
         function showLoaderWithError(message) {
             loader.classList.remove('hide-now');
             loader.innerHTML = `
@@ -432,7 +485,63 @@
             `;
         }
 
-        // HLS সেটআপ
+        // ===== ফুলস্ক্রিন ফাংশন (ঠিক করা) =====
+        function toggleFullscreen() {
+            if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+                // ফুলস্ক্রিনে যাওয়া
+                if (wrapper.requestFullscreen) {
+                    wrapper.requestFullscreen();
+                } else if (wrapper.webkitRequestFullscreen) {
+                    wrapper.webkitRequestFullscreen();
+                } else if (wrapper.msRequestFullscreen) {
+                    wrapper.msRequestFullscreen();
+                } else {
+                    // ফলব্যাক: CSS ফুলস্ক্রিন
+                    wrapper.classList.add('fullscreen');
+                    isFullscreen = true;
+                    fullscreenBtn.innerHTML = '<i class="fas fa-compress"></i>';
+                }
+            } else {
+                // ফুলস্ক্রিন থেকে বের হওয়া
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                } else if (document.msExitFullscreen) {
+                    document.msExitFullscreen();
+                } else {
+                    // CSS ফুলস্ক্রিন থেকে বের হওয়া
+                    wrapper.classList.remove('fullscreen');
+                    isFullscreen = false;
+                    fullscreenBtn.innerHTML = '<i class="fas fa-expand"></i>';
+                }
+            }
+        }
+
+        // ফুলস্ক্রিন চেঞ্জ ইভেন্ট
+        document.addEventListener('fullscreenchange', function() {
+            if (document.fullscreenElement) {
+                fullscreenBtn.innerHTML = '<i class="fas fa-compress"></i>';
+                isFullscreen = true;
+            } else {
+                fullscreenBtn.innerHTML = '<i class="fas fa-expand"></i>';
+                isFullscreen = false;
+                wrapper.classList.remove('fullscreen');
+            }
+        });
+
+        document.addEventListener('webkitfullscreenchange', function() {
+            if (document.webkitFullscreenElement) {
+                fullscreenBtn.innerHTML = '<i class="fas fa-compress"></i>';
+                isFullscreen = true;
+            } else {
+                fullscreenBtn.innerHTML = '<i class="fas fa-expand"></i>';
+                isFullscreen = false;
+                wrapper.classList.remove('fullscreen');
+            }
+        });
+
+        // ===== HLS সেটআপ =====
         function setupHLS(url) {
             if (Hls.isSupported()) {
                 hls = new Hls({
@@ -442,15 +551,11 @@
                     maxBufferLength: 30,
                     liveSyncDurationCount: 3,
                     liveDurationInfinity: true,
-                    abrEwmaDefaultEstimate: 500000,
-                    abrBandWidthFactor: 0.8,
-                    abrBandWidthUpFactor: 0.7,
                 });
 
                 hls.loadSource(url);
                 hls.attachMedia(video);
                 hls.on(Hls.Events.MANIFEST_PARSED, function(event, data) {
-                    // কোয়ালিটি লেভেল পাওয়া গেলে সিলেক্টরে যোগ করা
                     const levels = hls.levels;
                     if (levels && levels.length > 0) {
                         qualitySelector.innerHTML = '<option value="auto">Auto</option>';
@@ -483,17 +588,7 @@
                     }
                 });
 
-                hls.on(Hls.Events.LEVEL_SWITCHED, function(event, data) {
-                    const level = hls.levels[data.level];
-                    if (level) {
-                        const height = level.height || '?';
-                        const bitrate = (level.bitrate / 1000).toFixed(0);
-                        console.log(`Quality switched to: ${height}p (${bitrate}kbps)`);
-                    }
-                });
-
             } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-                // Safari native HLS
                 video.src = url;
                 video.addEventListener('loadedmetadata', function() {
                     hideLoader();
@@ -507,37 +602,62 @@
             }
         }
 
-        // ইভেন্ট লিসেনার: প্লে/পজ
+        // ===== ইভেন্ট লিসেনার =====
+
+        // প্লে/পজ
         playBtn.addEventListener('click', function() {
             if (video.paused) {
                 video.play().catch(() => {});
-                playBtn.innerHTML = '<i class="fas fa-pause"></i>';
+                this.innerHTML = '<i class="fas fa-pause"></i>';
                 isPlaying = true;
             } else {
                 video.pause();
-                playBtn.innerHTML = '<i class="fas fa-play"></i>';
+                this.innerHTML = '<i class="fas fa-play"></i>';
                 isPlaying = false;
             }
         });
 
-        // প্রগ্রেস বার
+        // ভিডিও প্লে হলে পজ বাটন আপডেট
+        video.addEventListener('play', function() {
+            playBtn.innerHTML = '<i class="fas fa-pause"></i>';
+            isPlaying = true;
+        });
+
+        video.addEventListener('pause', function() {
+            playBtn.innerHTML = '<i class="fas fa-play"></i>';
+            isPlaying = false;
+        });
+
+        // ===== টাইম আপডেট (ঠিক করা) =====
         video.addEventListener('timeupdate', function() {
-            if (!isNaN(video.duration)) {
+            if (!isNaN(video.duration) && isFinite(video.duration) && video.duration > 0) {
                 const progress = (video.currentTime / video.duration) * 100;
                 progressBar.value = progress;
                 currentTimeDisplay.textContent = formatTime(video.currentTime);
+                durationDisplay.textContent = formatTime(video.duration);
+            } else {
+                // লাইভ স্ট্রিমের জন্য
+                currentTimeDisplay.textContent = 'Live';
+                durationDisplay.textContent = '🔴';
             }
         });
 
+        // মেটাডেটা লোড হলে
         video.addEventListener('loadedmetadata', function() {
-            durationDisplay.textContent = formatTime(video.duration);
-            progressBar.max = 100;
+            if (!isNaN(video.duration) && isFinite(video.duration) && video.duration > 0) {
+                durationDisplay.textContent = formatTime(video.duration);
+            } else {
+                durationDisplay.textContent = '🔴 Live';
+            }
         });
 
+        // প্রগ্রেস বার
         progressBar.addEventListener('input', function() {
-            const time = (this.value / 100) * video.duration;
-            video.currentTime = time;
-            currentTimeDisplay.textContent = formatTime(time);
+            if (!isNaN(video.duration) && isFinite(video.duration) && video.duration > 0) {
+                const time = (this.value / 100) * video.duration;
+                video.currentTime = time;
+                currentTimeDisplay.textContent = formatTime(time);
+            }
         });
 
         // ভলিউম
@@ -562,52 +682,48 @@
         });
 
         // ফুলস্ক্রিন
-        fullscreenBtn.addEventListener('click', function() {
-            const wrapper = document.getElementById('player-wrapper');
-            if (!document.fullscreenElement) {
-                wrapper.requestFullscreen().catch(() => {});
-                this.innerHTML = '<i class="fas fa-compress"></i>';
-            } else {
-                document.exitFullscreen().catch(() => {});
-                this.innerHTML = '<i class="fas fa-expand"></i>';
-            }
-        });
+        fullscreenBtn.addEventListener('click', toggleFullscreen);
 
-        document.addEventListener('fullscreenchange', function() {
-            if (!document.fullscreenElement) {
-                fullscreenBtn.innerHTML = '<i class="fas fa-expand"></i>';
-            }
-        });
-
-        // কোয়ালিটি চেঞ্জ
+        // কোয়ালিটি
         qualitySelector.addEventListener('change', function() {
             if (hls) {
                 const level = parseInt(this.value);
                 if (isNaN(level)) {
-                    hls.currentLevel = -1; // auto
+                    hls.currentLevel = -1;
                 } else {
                     hls.currentLevel = level;
                 }
             }
         });
 
-        // কিবোর্ড কন্ট্রোল (স্পেসবার)
+        // কিবোর্ড
         document.addEventListener('keydown', function(e) {
             if (e.key === ' ' || e.key === 'Space') {
                 e.preventDefault();
                 playBtn.click();
             }
             if (e.key === 'f' || e.key === 'F') {
-                fullscreenBtn.click();
+                e.preventDefault();
+                toggleFullscreen();
             }
             if (e.key === 'm' || e.key === 'M') {
+                e.preventDefault();
                 muteBtn.click();
+            }
+            // Arrow keys for seeking
+            if (e.key === 'ArrowRight') {
+                e.preventDefault();
+                video.currentTime = Math.min(video.currentTime + 10, video.duration);
+            }
+            if (e.key === 'ArrowLeft') {
+                e.preventDefault();
+                video.currentTime = Math.max(video.currentTime - 10, 0);
             }
         });
 
-        // ৩ সেকেন্ড পর কন্ট্রোলস অটো-হাইড
+        // কন্ট্রোলস অটো-হাইড
         let mouseTimer;
-        document.getElementById('player-wrapper').addEventListener('mousemove', function() {
+        wrapper.addEventListener('mousemove', function() {
             controls.classList.add('active');
             clearTimeout(mouseTimer);
             mouseTimer = setTimeout(() => {
@@ -617,9 +733,8 @@
             }, 3000);
         });
 
-        // টাচ ডিভাইসে কন্ট্রোলস দেখানো
         let touchTimer;
-        document.getElementById('player-wrapper').addEventListener('touchstart', function() {
+        wrapper.addEventListener('touchstart', function() {
             controls.classList.toggle('active');
             clearTimeout(touchTimer);
             touchTimer = setTimeout(() => {
@@ -627,31 +742,31 @@
             }, 5000);
         });
 
-        // বাফারিং ইন্ডিকেটর
+        // বাফারিং
         video.addEventListener('waiting', function() {
             loader.classList.remove('hide-now');
-            loader.querySelector('.loading-text').textContent = 'BUFFERING...';
+            const text = loader.querySelector('.loading-text');
+            if (text) text.textContent = 'BUFFERING...';
         });
 
         video.addEventListener('canplay', function() {
             loader.classList.add('hide-now');
         });
 
-        // স্ট্রিম চালু করা
+        // স্ট্রিম চালু
         if (streamSource) {
             setupHLS(streamSource);
         } else {
             showLoaderWithError('No Stream URL Found!');
         }
 
-        // পেজ আনলোডে HLS ক্লিনআপ
         window.addEventListener('beforeunload', function() {
             if (hls) {
                 hls.destroy();
             }
         });
 
-        console.log('RS Player Pro loaded successfully!');
+        console.log('RS Player Pro loaded!');
         console.log('Stream URL:', streamSource);
 
     })();
