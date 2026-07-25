@@ -1,10 +1,15 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Dynamic Player with Rotation</title>
+    <title>Dynamic Player with Rotation & Auto Play</title>
     <meta name="viewport" content="width=device-width,initial-scale=1.0" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/plyr@3.6.2/dist/plyr.css" />
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
         body { 
             background: #000; 
             margin: 0; 
@@ -13,6 +18,7 @@
             justify-content: center; 
             align-items: center; 
             height: 100vh; 
+            overflow: hidden;
         }
         #player { 
             width: 100%; 
@@ -32,34 +38,62 @@
             transform: rotate(270deg) scale(1.2);
         }
         
-        /* ফুলস্ক্রিনে রোটেশন অ্যাডজাস্ট */
+        /* ফুলস্ক্রিনে রোটেশন অ্যাডজাস্ট - পুরো স্ক্রিন ফিট */
         .plyr--fullscreen.plyr--rotated-90 .plyr__video-wrapper,
         .plyr--fullscreen.plyr--rotated-270 .plyr__video-wrapper {
-            transform: rotate(90deg) scale(1.5);
+            transform: rotate(90deg) scale(1.8);
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: cover !important;
+        }
+        
+        .plyr--fullscreen.plyr--rotated-180 .plyr__video-wrapper {
+            transform: rotate(180deg) scale(1.2);
+        }
+        
+        /* ফুলস্ক্রিনে ভিডিও ফিট */
+        .plyr--fullscreen .plyr__video-wrapper video {
+            object-fit: contain !important;
+            width: 100% !important;
+            height: 100% !important;
         }
         
         /* রোটেশন ইনডিকেটর */
         .plyr__control--rotate-indicator {
             position: relative;
+            transition: all 0.3s ease;
         }
-        .plyr__control--rotate-indicator::after {
+        .plyr__control--rotate-indicator.active {
+            color: #00b3ff !important;
+            background: rgba(0, 179, 255, 0.2) !important;
+            border-radius: 50%;
+        }
+        .plyr__control--rotate-indicator.active::after {
             content: '↻';
             position: absolute;
             top: -5px;
             right: -5px;
-            font-size: 10px;
+            font-size: 12px;
             color: #00b3ff;
-            opacity: 0;
-            transition: opacity 0.3s;
+            animation: spin 2s linear infinite;
         }
-        .plyr__control--rotate-indicator.active::after {
-            opacity: 1;
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* মোবাইল ফ্রেন্ডলি */
+        @media (max-width: 768px) {
+            #player { max-width: 100%; }
+            .plyr__controls { padding: 10px 5px; }
+            .plyr__control { padding: 8px; }
         }
     </style>
 </head>
 <body>
 
-<video id="player" controls crossorigin playsinline>
+<video id="player" controls crossorigin playsinline autoplay>
     <source type="application/vnd.apple.mpegurl" src="">
 </video>
 
@@ -71,7 +105,7 @@
     const urlParams = new URLSearchParams(window.location.search);
     const videoSrc = urlParams.get('url');
     
-    const video = document.querySelector('video');
+    const video = document.getElementById('player');
     const source = video.querySelector('source');
     
     if (videoSrc) {
@@ -80,17 +114,33 @@
 
     document.addEventListener("DOMContentLoaded", () => {
         // Plyr প্লেয়ার ইনিশিয়ালাইজ
-        const player = new Plyr(video);
-        
-        // রোটেশন ট্র্যাকিং
+        const player = new Plyr(video, {
+            autoplay: true,
+            controls: [
+                'play-large', 'play', 'progress', 'current-time', 'mute', 
+                'volume', 'captions', 'settings', 'pip', 'airplay', 
+                'fullscreen'
+            ]
+        });
+
         let isRotated = false;
         let rotationAngle = 0;
 
         // HLS সাপোর্ট
         if (Hls.isSupported() && videoSrc) {
-            const hls = new Hls();
+            const hls = new Hls({
+                enableWorker: true,
+                lowLatencyMode: true,
+                backbufferLength: 30
+            });
             hls.loadSource(videoSrc);
             hls.attachMedia(video);
+            
+            hls.on(Hls.Events.MANIFEST_PARSED, function() {
+                video.play().catch(function(error) {
+                    console.log('Auto-play was prevented:', error);
+                });
+            });
         }
 
         // ফুলস্ক্রিন বাটন খুঁজে বের করা
@@ -105,8 +155,15 @@
                 // রোটেশন টগল
                 toggleRotation();
                 
-                // ফুলস্ক্রিন টগল (Plyr এর ডিফল্ট ফাংশন কল)
+                // ফুলস্ক্রিন টগল
                 player.fullscreen.toggle();
+                
+                // অটোপ্লে নিশ্চিত করা
+                if (video.paused) {
+                    video.play().catch(function(error) {
+                        console.log('Play prevented:', error);
+                    });
+                }
             });
         }
 
@@ -123,12 +180,18 @@
                 rotationAngle = 90;
                 isRotated = true;
                 
-                // ফুলস্ক্রিনে থাকলে ভিউপোর্ট অ্যাডজাস্ট
+                // ফুলস্ক্রিনে থাকলে পুরো স্ক্রিন কভার
                 if (document.fullscreenElement) {
                     document.documentElement.style.transform = 'rotate(90deg)';
                     document.documentElement.style.width = '100vh';
                     document.documentElement.style.height = '100vw';
                     document.documentElement.style.transformOrigin = 'center center';
+                    document.documentElement.style.overflow = 'hidden';
+                    
+                    // ভিডিও পুরো স্ক্রিন ফিট
+                    video.style.objectFit = 'cover';
+                    video.style.width = '100%';
+                    video.style.height = '100%';
                 }
             } else {
                 // নরমালে ফিরে যান
@@ -140,15 +203,18 @@
                 document.documentElement.style.width = '';
                 document.documentElement.style.height = '';
                 document.documentElement.style.transformOrigin = '';
+                document.documentElement.style.overflow = '';
+                
+                video.style.objectFit = '';
+                video.style.width = '';
+                video.style.height = '';
             }
             
             // ফুলস্ক্রিন বাটনে ইন্ডিকেটর দেখান
             if (isRotated) {
                 fullscreenBtn.classList.add('active');
-                fullscreenBtn.style.color = '#00b3ff';
             } else {
                 fullscreenBtn.classList.remove('active');
-                fullscreenBtn.style.color = '';
             }
         }
 
@@ -160,13 +226,41 @@
                 document.documentElement.style.width = '';
                 document.documentElement.style.height = '';
                 document.documentElement.style.transformOrigin = '';
+                document.documentElement.style.overflow = '';
+                
+                video.style.objectFit = '';
+                video.style.width = '';
+                video.style.height = '';
+                
+                // রোটেশন অ্যাক্টিভ থাকলে সেটা রাখুন
+                if (isRotated) {
+                    const plyrElement = player.elements.container;
+                    plyrElement.classList.add('plyr--rotated-90');
+                }
             } else if (isRotated) {
-                // ফুলস্ক্রিনে রোটেটেড থাকলে অ্যাডজাস্ট
+                // ফুলস্ক্রিনে রোটেটেড থাকলে পুরো স্ক্রিন কভার
                 document.documentElement.style.transform = 'rotate(90deg)';
                 document.documentElement.style.width = '100vh';
                 document.documentElement.style.height = '100vw';
                 document.documentElement.style.transformOrigin = 'center center';
+                document.documentElement.style.overflow = 'hidden';
+                
+                video.style.objectFit = 'cover';
+                video.style.width = '100%';
+                video.style.height = '100%';
             }
+        });
+
+        // অটোপ্লে চেষ্টা
+        video.addEventListener('loadedmetadata', function() {
+            video.play().catch(function(error) {
+                console.log('Auto-play was prevented:', error);
+                // ইউজার ইন্টারঅ্যাকশনের জন্য অপেক্ষা
+                document.addEventListener('click', function playOnClick() {
+                    video.play();
+                    document.removeEventListener('click', playOnClick);
+                }, { once: true });
+            });
         });
 
         // কিবোর্ড শর্টকাট: F কী প্রেস করলে রোটেট+ফুলস্ক্রিন হবে
@@ -179,7 +273,7 @@
             }
         });
 
-        console.log('🎬 প্লেয়ার লোড হয়েছে! ফুলস্ক্রিন বাটনেই রোটেশন ফিচার অ্যাড করা হয়েছে।');
+        console.log('🎬 প্লেয়ার লোড হয়েছে! ফুলস্ক্রিন বাটনে ক্লিক করলে রোটেট + অটোপ্লে হবে।');
     });
 </script>
 
