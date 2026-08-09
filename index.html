@@ -33,15 +33,16 @@
     video {
       width: 100%;
       height: 100%;
-      object-fit: cover;  /* Fill entire screen, no gaps, no cropping (scales to cover) */
+      object-fit: contain;  /* Original behavior: no cropping, may have black bars */
       background: #000;
       will-change: transform;
       transition: object-fit .15s ease;
     }
-    /* Both modes use 'cover' – fills screen completely, no empty space */
-    video.normal-mode,
+    video.normal-mode {
+      object-fit: contain;
+    }
     video.fullscreen-mode {
-      object-fit: cover;
+      object-fit: contain;  /* Keep original: no cropping even in fullscreen */
     }
 
     #loading {
@@ -198,7 +199,6 @@
     try { video.load(); } catch(e) {}
   }
 
-  // Both modes use 'cover' – fills entire screen, no gaps
   function setNormalVideo() {
     video.classList.remove("fullscreen-mode");
     video.classList.add("normal-mode");
@@ -235,7 +235,7 @@
         "volume",
         "time_and_duration",
         "spacer",
-        "overflow_menu",
+        "overflow_menu",   // settings gear – left of fullscreen
         "fullscreen"
       ],
       overflowMenuButtons: [
