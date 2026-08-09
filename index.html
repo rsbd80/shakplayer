@@ -38,8 +38,11 @@
       will-change: transform;
       transition: object-fit .15s ease;
     }
-    video.normal-mode { object-fit: contain; }
-    video.fullscreen-mode { object-fit: cover; }
+    /* Both modes use 'contain' so video is never cropped */
+    video.normal-mode,
+    video.fullscreen-mode {
+      object-fit: contain;
+    }
 
     #loading {
       position: fixed;
@@ -195,6 +198,7 @@
     try { video.load(); } catch(e) {}
   }
 
+  // Both modes now use 'contain' – no cropping
   function setNormalVideo() {
     video.classList.remove("fullscreen-mode");
     video.classList.add("normal-mode");
@@ -231,7 +235,7 @@
         "volume",
         "time_and_duration",
         "spacer",
-        "overflow_menu",   // settings gear – left of fullscreen
+        "overflow_menu",
         "fullscreen"
       ],
       overflowMenuButtons: [
