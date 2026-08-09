@@ -1,415 +1,1960 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-  <meta name="referrer" content="no-referrer">
-  <title>Shaka Player</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/shaka-player@4.16.2/dist/controls.css">
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-    html, body {
-      width: 100%;
-      height: 100%;
-      background: #000;
-      overflow: hidden;
-      font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      -webkit-user-select: none;
-      user-select: none;
-      -webkit-touch-callout: none;
-    }
-    #player {
-      position: fixed;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      background: #000;
-      touch-action: manipulation;
-    }
-    video {
-      width: 100%;
-      height: 100%;
-      object-fit: contain;
-      background: #000;
-      will-change: transform;
-      transition: object-fit .15s ease;
-    }
-    /* Normal mode: show full video with black bars if needed */
-    video.normal-mode {
-      object-fit: contain;
-    }
-    /* Fullscreen mode: fill entire screen, no empty space, no cropping */
-    video.fullscreen-mode {
-      object-fit: cover;
-    }
 
-    #loading {
-      position: fixed;
-      left: 50%;
-      top: 50%;
-      width: 30px;
-      height: 30px;
-      margin-left: -15px;
-      margin-top: -15px;
-      z-index: 9999;
-      display: none;
-      pointer-events: none;
-    }
-    .spinner {
-      width: 30px;
-      height: 30px;
-      border-radius: 50%;
-      border: 3px solid rgba(255,255,255,.15);
-      border-top-color: rgba(255,255,255,.75);
-      animation: spin .75s linear infinite;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
+<meta charset="UTF-8">
 
-    #error {
-      position: fixed;
-      inset: 0;
-      z-index: 10000;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      flex-direction: column;
-      gap: 12px;
-      padding: 25px;
-      background: #080808;
-      color: #fff;
-      text-align: center;
-    }
-    #error h2 { font-size: 18px; font-weight: 600; }
-    #error p {
-      max-width: 600px;
-      color: #999;
-      font-size: 13px;
-      line-height: 1.6;
-      word-break: break-word;
-    }
-    #retry {
-      margin-top: 8px;
-      padding: 10px 22px;
-      border: 0;
-      border-radius: 7px;
-      background: #ef4444;
-      color: #fff;
-      font-size: 13px;
-      cursor: pointer;
-    }
+<meta name="viewport"
+      content="width=device-width,
+               initial-scale=1,
+               maximum-scale=1,
+               user-scalable=no,
+               viewport-fit=cover">
 
-    .shaka-video-container { background: #000!important; }
-    .shaka-controls-container .shaka-play-button { color: #ef4444!important; }
-    .shaka-controls-container .shaka-mute-button { color: #ef4444!important; }
-    .shaka-controls-container .shaka-overflow-menu-button { color: #fff!important; }
-    .shaka-controls-container .shaka-fullscreen-button { color: #fff!important; }
-    .shaka-controls-container .shaka-seek-bar .shaka-seek-bar-played { background: #ef4444!important; }
-    .shaka-controls-container .shaka-seek-bar .shaka-seek-bar-buffered { background: #7f1d1d!important; }
+<meta name="referrer" content="no-referrer">
 
-    @media(max-width:500px) {
-      .shaka-controls-container .shaka-overflow-menu-button,
-      .shaka-controls-container .shaka-fullscreen-button {
-        min-width: 40px!important;
-      }
-    }
+<title>Shaka Player</title>
 
-    /* Custom control order: settings (gear) to the left of fullscreen */
-    .shaka-controls-container .shaka-overflow-menu-button {
-      order: 5 !important;
-    }
-    .shaka-controls-container .shaka-fullscreen-button {
-      order: 6 !important;
-      margin-left: 4px;
-    }
-    .shaka-controls-container .shaka-play-button { order: 0 !important; }
-    .shaka-controls-container .shaka-mute-button { order: 1 !important; }
-    .shaka-controls-container .shaka-volume-bar { order: 2 !important; }
-    .shaka-controls-container .shaka-time-and-duration { order: 3 !important; }
-    .shaka-controls-container .shaka-spacer {
-      flex: 1;
-      order: 4 !important;
-    }
-    .shaka-controls-container .shaka-controls-button-panel button {
-      margin: 0 2px;
-    }
-  </style>
+<link rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/shaka-player@4.16.2/dist/controls.css">
+
+
+<style>
+
+/* =========================
+   RESET
+========================= */
+
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+}
+
+html,
+body{
+  width:100%;
+  height:100%;
+  background:#000;
+  overflow:hidden;
+
+  font-family:
+    "Segoe UI",
+    Roboto,
+    Helvetica,
+    Arial,
+    sans-serif;
+
+  -webkit-user-select:none;
+  user-select:none;
+
+  -webkit-touch-callout:none;
+}
+
+
+/* =========================
+   PLAYER
+========================= */
+
+#player{
+  position:fixed;
+  inset:0;
+
+  width:100%;
+  height:100%;
+
+  background:#000;
+
+  touch-action:manipulation;
+}
+
+
+video{
+  width:100%;
+  height:100%;
+
+  object-fit:contain;
+
+  background:#000;
+
+  will-change:transform;
+}
+
+
+/* Fit */
+
+video.mode-fit{
+  object-fit:contain;
+}
+
+
+/* Fill */
+
+video.mode-fill{
+  object-fit:fill;
+}
+
+
+/* Zoom */
+
+video.mode-zoom{
+  object-fit:cover;
+}
+
+
+/* =========================
+   LOADING
+========================= */
+
+#loading{
+  position:fixed;
+  inset:0;
+
+  z-index:9999;
+
+  display:flex;
+
+  align-items:center;
+  justify-content:center;
+
+  flex-direction:column;
+
+  gap:15px;
+
+  background:#050505;
+}
+
+
+.spinner{
+
+  width:40px;
+  height:40px;
+
+  border-radius:50%;
+
+  border:4px solid #222;
+
+  border-top-color:#ef4444;
+
+  animation:
+    spin .8s linear infinite;
+
+}
+
+
+@keyframes spin{
+
+  to{
+    transform:rotate(360deg);
+  }
+
+}
+
+
+#loadingText{
+
+  color:#999;
+
+  font-size:13px;
+
+  letter-spacing:.3px;
+
+}
+
+
+/* =========================
+   ERROR
+========================= */
+
+#error{
+
+  position:fixed;
+
+  inset:0;
+
+  z-index:10000;
+
+  display:none;
+
+  align-items:center;
+
+  justify-content:center;
+
+  flex-direction:column;
+
+  gap:12px;
+
+  padding:25px;
+
+  background:#080808;
+
+  color:#fff;
+
+  text-align:center;
+
+}
+
+
+#error h2{
+
+  font-size:18px;
+
+  font-weight:600;
+
+}
+
+
+#error p{
+
+  max-width:600px;
+
+  color:#999;
+
+  font-size:13px;
+
+  line-height:1.6;
+
+  word-break:break-word;
+
+}
+
+
+#retry{
+
+  margin-top:8px;
+
+  padding:10px 22px;
+
+  border:0;
+
+  border-radius:7px;
+
+  background:#ef4444;
+
+  color:#fff;
+
+  font-size:13px;
+
+  cursor:pointer;
+
+}
+
+
+/* =========================
+   CUSTOM FIT BUTTON
+========================= */
+
+.sp-fit-btn{
+
+  background:transparent!important;
+
+  border:none!important;
+
+  color:#fff!important;
+
+  cursor:pointer!important;
+
+  padding:0 7px!important;
+
+  margin:0!important;
+
+  height:100%;
+
+  min-width:48px;
+
+  display:flex;
+
+  align-items:center;
+
+  justify-content:center;
+
+  gap:4px;
+
+  opacity:.85;
+
+  transition:
+    opacity .15s,
+    transform .15s;
+
+  -webkit-tap-highlight-color:
+    transparent;
+
+}
+
+
+.sp-fit-btn:hover{
+
+  opacity:1;
+
+}
+
+
+.sp-fit-btn:active{
+
+  opacity:1;
+
+  transform:scale(.92);
+
+}
+
+
+.sp-fit-btn:focus-visible{
+
+  outline:
+    2px solid #ef4444;
+
+  outline-offset:2px;
+
+  border-radius:5px;
+
+}
+
+
+.fit-icon{
+
+  width:18px;
+  height:18px;
+
+  display:flex;
+
+  align-items:center;
+  justify-content:center;
+
+}
+
+
+.fit-icon svg{
+
+  width:18px;
+  height:18px;
+
+  display:block;
+
+}
+
+
+.fit-ratio{
+
+  color:#fff;
+
+  font-size:10px;
+
+  font-weight:600;
+
+  line-height:1;
+
+  white-space:nowrap;
+
+}
+
+
+/* =========================
+   CUSTOM PIP BUTTON
+========================= */
+
+.sp-pip-btn{
+
+  background:transparent!important;
+
+  border:none!important;
+
+  color:#fff!important;
+
+  cursor:pointer!important;
+
+  padding:0 7px!important;
+
+  margin:0!important;
+
+  height:100%;
+
+  min-width:40px;
+
+  display:flex;
+
+  align-items:center;
+
+  justify-content:center;
+
+  opacity:.85;
+
+  transition:
+    opacity .15s,
+    transform .15s;
+
+}
+
+
+.sp-pip-btn:hover{
+
+  opacity:1;
+
+}
+
+
+.sp-pip-btn:active{
+
+  transform:scale(.92);
+
+}
+
+
+.sp-pip-btn.active{
+
+  color:#ef4444!important;
+
+  opacity:1;
+
+}
+
+
+.sp-pip-btn svg{
+
+  width:18px;
+  height:18px;
+
+}
+
+
+/* =========================
+   SHAKA
+========================= */
+
+.shaka-controls-container
+.shaka-controls-button-panel
+button{
+
+  color:#fff!important;
+
+}
+
+
+.shaka-controls-container
+.shaka-play-button{
+
+  color:#ef4444!important;
+
+}
+
+
+.shaka-controls-container
+.shaka-mute-button{
+
+  color:#ef4444!important;
+
+}
+
+
+.shaka-controls-container
+.shaka-fullscreen-button{
+
+  color:#fff!important;
+
+}
+
+
+.shaka-controls-container
+.shaka-overflow-menu-button{
+
+  color:#fff!important;
+
+}
+
+
+.shaka-controls-container
+.shaka-seek-bar
+.shaka-seek-bar-played{
+
+  background:#ef4444!important;
+
+}
+
+
+.shaka-controls-container
+.shaka-seek-bar
+.shaka-seek-bar-buffered{
+
+  background:#7f1d1d!important;
+
+}
+
+
+.shaka-video-container{
+
+  background:#000!important;
+
+}
+
+
+/* =========================
+   MOBILE
+========================= */
+
+@media(max-width:500px){
+
+  .fit-ratio{
+
+    font-size:9px;
+
+  }
+
+  .sp-fit-btn{
+
+    padding:
+      0 5px!important;
+
+    min-width:42px;
+
+  }
+
+  .sp-pip-btn{
+
+    padding:
+      0 5px!important;
+
+    min-width:36px;
+
+  }
+
+}
+
+
+</style>
+
 </head>
+
+
 <body>
 
-<div id="loading"><div class="spinner"></div></div>
+
+<!-- =========================
+     LOADING
+========================= -->
+
+<div id="loading">
+
+  <div class="spinner"></div>
+
+  <div id="loadingText">
+    Loading stream...
+  </div>
+
+</div>
+
+
+<!-- =========================
+     ERROR
+========================= -->
 
 <div id="error">
-  <h2>Playback Error</h2>
+
+  <h2>
+    Unable to play stream
+  </h2>
+
   <p id="errorText"></p>
-  <button id="retry">Retry</button>
+
+  <button id="retry">
+    Retry
+  </button>
+
 </div>
+
+
+<!-- =========================
+     PLAYER
+========================= -->
 
 <div id="player">
-  <video id="video" playsinline webkit-playsinline preload="auto"></video>
+
+  <video
+    id="video"
+    playsinline
+    webkit-playsinline
+    preload="auto">
+  </video>
+
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/shaka-player@4.16.2/dist/shaka-player.compiled.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/shaka-player@4.16.2/dist/shaka-player.ui.min.js"></script>
+
+<!-- =========================
+     SHAKA
+========================= -->
+
+<script src="https://cdn.jsdelivr.net/npm/shaka-player@4.16.2/dist/shaka-player.compiled.js">
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/shaka-player@4.16.2/dist/shaka-player.ui.min.js">
+</script>
+
 
 <script>
+
 (function(){
-  "use strict";
 
-  const video = document.getElementById("video");
-  const playerContainer = document.getElementById("player");
-  const loading = document.getElementById("loading");
-  const errorBox = document.getElementById("error");
-  const errorText = document.getElementById("errorText");
-  const retryButton = document.getElementById("retry");
+"use strict";
 
-  let player = null;
-  let streamURL = null;
-  let reconnecting = false;
-  let reconnectCount = 0;
-  let reconnectTimer = null;
 
-  function getStreamURL() {
-    const params = new URLSearchParams(window.location.search);
-    const url = params.get("url");
-    if(!url) return null;
-    try { return decodeURIComponent(url); } catch(e) { return url; }
+/* =========================
+   ELEMENTS
+========================= */
+
+const video =
+  document.getElementById("video");
+
+const playerContainer =
+  document.getElementById("player");
+
+const loading =
+  document.getElementById("loading");
+
+const loadingText =
+  document.getElementById("loadingText");
+
+const errorBox =
+  document.getElementById("error");
+
+const errorText =
+  document.getElementById("errorText");
+
+const retryButton =
+  document.getElementById("retry");
+
+
+let player = null;
+
+let streamURL = null;
+
+let fitIndex = 0;
+
+let reconnectTimer = null;
+
+
+/* =========================
+   GET URL
+========================= */
+
+function getStreamURL(){
+
+  const params =
+    new URLSearchParams(
+      window.location.search
+    );
+
+  let url =
+    params.get("url");
+
+  if(!url){
+    return null;
   }
 
-  function showLoading(){ loading.style.display = "block"; }
-  function hideLoading(){ loading.style.display = "none"; }
-  function showError(message){
-    hideLoading();
-    errorText.textContent = message || "Playback error.";
-    errorBox.style.display = "flex";
+  try{
+
+    return decodeURIComponent(url);
+
+  }catch(e){
+
+    return url;
+
   }
-  function hideError(){ errorBox.style.display = "none"; }
 
-  function isM3U8(url){ return /\.m3u8($|[?#])/i.test(url); }
-  function isMPD(url){ return /\.mpd($|[?#])/i.test(url); }
+}
 
-  async function destroyPlayer(){
-    if(player){
-      try { await player.destroy(); } catch(e) { console.warn(e); }
-      player = null;
+
+/* =========================
+   UI
+========================= */
+
+function showLoading(text){
+
+  loadingText.textContent =
+    text || "Loading stream...";
+
+  loading.style.display =
+    "flex";
+
+  errorBox.style.display =
+    "none";
+
+}
+
+
+function hideLoading(){
+
+  loading.style.display =
+    "none";
+
+}
+
+
+function showError(message){
+
+  hideLoading();
+
+  errorText.textContent =
+    message;
+
+  errorBox.style.display =
+    "flex";
+
+}
+
+
+function hideError(){
+
+  errorBox.style.display =
+    "none";
+
+}
+
+
+/* =========================
+   STREAM TYPE
+========================= */
+
+function isM3U8(url){
+
+  return /\.m3u8($|[?#])/i
+    .test(url);
+
+}
+
+
+function isMPD(url){
+
+  return /\.mpd($|[?#])/i
+    .test(url);
+
+}
+
+
+/* =========================
+   RATIO
+========================= */
+
+function getRatio(){
+
+  const width =
+    video.videoWidth;
+
+  const height =
+    video.videoHeight;
+
+  if(!width || !height){
+
+    return "";
+
+  }
+
+
+  const ratio =
+    width / height;
+
+
+  if(
+    Math.abs(
+      ratio - (16/9)
+    ) < .03
+  ){
+
+    return "16:9";
+
+  }
+
+
+  if(
+    Math.abs(
+      ratio - (4/3)
+    ) < .03
+  ){
+
+    return "4:3";
+
+  }
+
+
+  if(
+    Math.abs(
+      ratio - (21/9)
+    ) < .04
+  ){
+
+    return "21:9";
+
+  }
+
+
+  if(
+    Math.abs(
+      ratio - 1
+    ) < .03
+  ){
+
+    return "1:1";
+
+  }
+
+
+  return ratio.toFixed(2)+":1";
+
+}
+
+
+/* =========================
+   FIT ICONS
+========================= */
+
+const FIT_ICONS = {
+
+  fit:`
+
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round">
+
+    <rect
+      x="2"
+      y="3"
+      width="20"
+      height="14"
+      rx="2"/>
+
+    <line
+      x1="2"
+      y1="21"
+      x2="22"
+      y2="21"/>
+
+  </svg>
+
+  `,
+
+
+  fill:`
+
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round">
+
+    <rect
+      x="3"
+      y="3"
+      width="18"
+      height="18"
+      rx="2"/>
+
+    <path d="M3 9h18"/>
+    <path d="M3 15h18"/>
+    <path d="M9 3v18"/>
+    <path d="M15 3v18"/>
+
+  </svg>
+
+  `,
+
+
+  zoom:`
+
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round">
+
+    <rect
+      x="2"
+      y="3"
+      width="20"
+      height="14"
+      rx="2"/>
+
+    <path d="M6 7l3 3"/>
+    <path d="M9 10H7"/>
+    <path d="M9 10V8"/>
+
+    <path d="M18 7l-3 3"/>
+    <path d="M15 10h2"/>
+    <path d="M15 10V8"/>
+
+    <path d="M6 13l3-3"/>
+    <path d="M9 10H7"/>
+    <path d="M9 10v2"/>
+
+    <path d="M18 13l-3-3"/>
+    <path d="M15 10h2"/>
+    <path d="M15 10v2"/>
+
+  </svg>
+
+  `
+
+};
+
+
+/* =========================
+   FIT MODES
+========================= */
+
+const FIT_MODES = [
+
+  {
+    name:"Fit",
+    css:"mode-fit",
+    icon:FIT_ICONS.fit
+  },
+
+  {
+    name:"Fill",
+    css:"mode-fill",
+    icon:FIT_ICONS.fill
+  },
+
+  {
+    name:"Zoom",
+    css:"mode-zoom",
+    icon:FIT_ICONS.zoom
+  }
+
+];
+
+
+/* =========================
+   ADD FIT BUTTON
+========================= */
+
+function addFitButton(){
+
+  const panel =
+    playerContainer.querySelector(
+      ".shaka-controls-button-panel"
+    );
+
+
+  if(!panel){
+
+    console.warn(
+      "Shaka control panel not found"
+    );
+
+    return;
+
+  }
+
+
+  if(
+    panel.querySelector(
+      ".sp-fit-btn"
+    )
+  ){
+
+    return;
+
+  }
+
+
+  const fullscreen =
+    panel.querySelector(
+      ".shaka-fullscreen-button"
+    );
+
+
+  const button =
+    document.createElement(
+      "button"
+    );
+
+
+  button.className =
+    "sp-fit-btn";
+
+
+  button.type =
+    "button";
+
+
+  button.title =
+    "Video Fit: Fit";
+
+
+  button.innerHTML = `
+
+    <span class="fit-icon">
+      ${FIT_ICONS.fit}
+    </span>
+
+    <span class="fit-ratio">
+      --
+    </span>
+
+  `;
+
+
+  if(fullscreen){
+
+    panel.insertBefore(
+      button,
+      fullscreen
+    );
+
+  }else{
+
+    panel.appendChild(
+      button
+    );
+
+  }
+
+
+  function applyFit(){
+
+    const mode =
+      FIT_MODES[fitIndex];
+
+
+    video.classList.remove(
+      "mode-fit",
+      "mode-fill",
+      "mode-zoom"
+    );
+
+
+    video.classList.add(
+      mode.css
+    );
+
+
+    const icon =
+      button.querySelector(
+        ".fit-icon"
+      );
+
+
+    const ratio =
+      button.querySelector(
+        ".fit-ratio"
+      );
+
+
+    if(icon){
+
+      icon.innerHTML =
+        mode.icon;
+
     }
-    video.pause();
-    video.removeAttribute("src");
-    try { video.load(); } catch(e) {}
-  }
 
-  function setNormalVideo() {
-    video.classList.remove("fullscreen-mode");
-    video.classList.add("normal-mode");
-  }
-  function setFullscreenVideo() {
-    video.classList.remove("normal-mode");
-    video.classList.add("fullscreen-mode");
-  }
 
-  function setupFullscreenEvents(){
-    function update(){
-      const fullscreen = document.fullscreenElement || document.webkitFullscreenElement;
-      if(fullscreen) setFullscreenVideo();
-      else setNormalVideo();
+    if(ratio){
+
+      const r =
+        getRatio();
+
+      ratio.textContent =
+        r || "--";
+
     }
-    document.addEventListener("fullscreenchange", update);
-    document.addEventListener("webkitfullscreenchange", update);
+
+
+    button.title =
+      "Video Fit: " +
+      mode.name;
+
   }
 
-  async function startShaka(url){
-    showLoading();
-    shaka.polyfill.installAll();
-    if(!shaka.Player.isBrowserSupported()){
-      throw new Error("This browser does not support Shaka Player.");
+
+  button.addEventListener(
+    "click",
+    function(event){
+
+      event.preventDefault();
+
+      event.stopPropagation();
+
+
+      fitIndex++;
+
+      if(
+        fitIndex >=
+        FIT_MODES.length
+      ){
+
+        fitIndex = 0;
+
+      }
+
+
+      applyFit();
+
     }
-    player = new shaka.Player();
-    await player.attach(video);
+  );
 
-    const overlay = new shaka.ui.Overlay(player, playerContainer, video);
-    overlay.configure({
-      controlPanelElements: [
-        "play_pause",
-        "mute",
-        "volume",
-        "time_and_duration",
-        "spacer",
-        "overflow_menu",
-        "fullscreen"
-      ],
-      overflowMenuButtons: [
-        "quality",
-        "picture_in_picture",
-        "loop",
-        "playback_rate"
-      ],
-      seekBarColors: {
-        base: "#777",
-        buffered: "#7f1d1d",
-        played: "#ef4444"
-      }
-    });
 
-    player.configure({
-      streaming: {
-        lowLatencyMode: true,
-        bufferingGoal: 5,
-        rebufferingGoal: 1,
-        bufferBehind: 20,
-        safeSeekOffset: 3,
-        stallEnabled: true,
-        stallThreshold: 1.5,
-        stallSkip: .3,
-        retryParameters: { maxAttempts: 5, baseDelay: 300, backoffFactor: 1.8, fuzzFactor: .3, timeout: 20000 }
-      },
-      manifest: {
-        defaultPresentationDelay: 2,
-        ignoreTextStreamFailures: true,
-        retryParameters: { maxAttempts: 5, baseDelay: 300, backoffFactor: 1.8, fuzzFactor: .3, timeout: 20000 }
-      },
-      abr: {
-        enabled: true,
-        defaultBandwidthEstimate: 3000000,
-        switchInterval: 2
-      }
-    });
+  function updateRatio(){
 
-    player.addEventListener("error", function(event){
-      console.error("Shaka error:", event.detail);
-    });
+    const ratio =
+      button.querySelector(
+        ".fit-ratio"
+      );
 
-    await player.load(url);
-    hideLoading();
-    try { await video.play(); } catch(e) { console.log("Autoplay blocked."); }
+
+    if(ratio){
+
+      ratio.textContent =
+        getRatio() || "--";
+
+    }
+
   }
 
-  async function startNativeHLS(url){
-    showLoading();
-    video.controls = true;
-    video.src = url;
-    return new Promise((resolve, reject) => {
-      function loaded(){
-        hideLoading();
-        video.play().catch(()=>{});
-        resolve();
-      }
-      function failed(){ reject(new Error("Native HLS playback failed.")); }
-      video.addEventListener("loadedmetadata", loaded, {once:true});
-      video.addEventListener("error", failed, {once:true});
-    });
+
+  video.addEventListener(
+    "loadedmetadata",
+    updateRatio
+  );
+
+
+  video.addEventListener(
+    "resize",
+    updateRatio
+  );
+
+
+  applyFit();
+
+}
+
+
+/* =========================
+   PIP BUTTON
+========================= */
+
+function addPipButton(){
+
+  const panel =
+    playerContainer.querySelector(
+      ".shaka-controls-button-panel"
+    );
+
+
+  if(!panel){
+
+    return;
+
   }
 
-  async function playStream(url){
-    await destroyPlayer();
-    setNormalVideo();
-    if(isM3U8(url)){
-      try {
-        await startShaka(url);
-        return;
-      } catch(error) {
-        console.warn("Shaka HLS failed:", error);
-        await destroyPlayer();
-        if(video.canPlayType("application/vnd.apple.mpegurl")){
-          try {
-            await startNativeHLS(url);
-            return;
-          } catch(nativeError) {
-            console.warn("Native HLS failed:", nativeError);
+
+  if(
+    panel.querySelector(
+      ".sp-pip-btn"
+    )
+  ){
+
+    return;
+
+  }
+
+
+  const supported =
+    !!(
+      document.pictureInPictureEnabled
+      ||
+      (
+        video.webkitSupportsPresentationMode
+        &&
+        typeof
+        video.webkitSetPresentationMode
+        ===
+        "function"
+      )
+    );
+
+
+  if(!supported){
+
+    return;
+
+  }
+
+
+  const fitButton =
+    panel.querySelector(
+      ".sp-fit-btn"
+    );
+
+
+  const button =
+    document.createElement(
+      "button"
+    );
+
+
+  button.className =
+    "sp-pip-btn";
+
+
+  button.type =
+    "button";
+
+
+  button.title =
+    "Picture in Picture";
+
+
+  button.innerHTML = `
+
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2">
+
+      <rect
+        x="3"
+        y="5"
+        width="18"
+        height="14"
+        rx="2"/>
+
+      <rect
+        x="12"
+        y="12"
+        width="7"
+        height="5"
+        rx="1"
+        fill="currentColor"
+        stroke="none"/>
+
+    </svg>
+
+  `;
+
+
+  if(fitButton){
+
+    panel.insertBefore(
+      button,
+      fitButton
+    );
+
+  }else{
+
+    panel.appendChild(
+      button
+    );
+
+  }
+
+
+  function setActive(active){
+
+    button.classList.toggle(
+      "active",
+      active
+    );
+
+
+    button.title =
+      active
+      ? "Exit Picture in Picture"
+      : "Picture in Picture";
+
+  }
+
+
+  button.addEventListener(
+    "click",
+    async function(event){
+
+      event.preventDefault();
+
+      event.stopPropagation();
+
+
+      try{
+
+        if(
+          document.pictureInPictureEnabled
+        ){
+
+          if(
+            document.pictureInPictureElement
+          ){
+
+            await document
+              .exitPictureInPicture();
+
+          }else{
+
+            await video
+              .requestPictureInPicture();
+
           }
+
         }
-        throw new Error("M3U8 playback failed.");
+
+        else if(
+          video.webkitSupportsPresentationMode
+        ){
+
+          video.webkitSetPresentationMode(
+
+            video.webkitPresentationMode
+            ===
+            "picture-in-picture"
+
+            ? "inline"
+
+            : "picture-in-picture"
+
+          );
+
+        }
+
+      }catch(error){
+
+        console.warn(
+          "PiP unavailable:",
+          error
+        );
+
       }
+
     }
-    if(isMPD(url)){
-      await startShaka(url);
-      return;
+  );
+
+
+  video.addEventListener(
+    "enterpictureinpicture",
+    function(){
+
+      setActive(true);
+
     }
-    await startShaka(url);
+  );
+
+
+  video.addEventListener(
+    "leavepictureinpicture",
+    function(){
+
+      setActive(false);
+
+    }
+  );
+
+}
+
+
+/* =========================
+   SHAKA PLAYER
+========================= */
+
+async function startShaka(url){
+
+  showLoading(
+    "Starting Shaka Player..."
+  );
+
+
+  shaka.polyfill.installAll();
+
+
+  if(
+    !shaka.Player.isBrowserSupported()
+  ){
+
+    throw new Error(
+      "Shaka Player is not supported by this browser."
+    );
+
   }
 
-  async function reconnect(){
-    if(reconnecting || !streamURL) return;
-    if(reconnectCount >= 5){
-      showError("Stream unavailable.");
-      return;
+
+  player =
+    new shaka.Player();
+
+
+  await player.attach(
+    video
+  );
+
+
+  /* -------------------------
+     UI
+  ------------------------- */
+
+  new shaka.ui.Overlay(
+    player,
+    playerContainer,
+    video
+  ).configure({
+
+    controlPanelElements:[
+
+      "play_pause",
+
+      "mute",
+
+      "volume",
+
+      "time_and_duration",
+
+      "spacer",
+
+      "quality",
+
+      "fullscreen",
+
+      "overflow_menu"
+
+    ],
+
+
+    overflowMenuButtons:[
+
+      "quality",
+
+      "picture_in_picture",
+
+      "loop",
+
+      "playback_rate"
+
+    ],
+
+
+    seekBarColors:{
+
+      base:"#777",
+
+      buffered:"#7f1d1d",
+
+      played:"#ef4444"
+
     }
-    reconnecting = true;
-    reconnectCount++;
-    showLoading();
-    try {
-      await playStream(streamURL);
-      reconnectCount = 0;
-      reconnecting = false;
-      hideLoading();
-    } catch(error) {
-      console.error("Reconnect failed:", error);
-      reconnecting = false;
-      reconnectTimer = setTimeout(reconnect, Math.min(1000 * Math.pow(2, reconnectCount - 1), 8000));
+
+  });
+
+
+  /*
+   * Wait for Shaka controls
+   */
+
+  setTimeout(
+    function(){
+
+      addFitButton();
+
+      addPipButton();
+
+    },
+    500
+  );
+
+
+  /* -------------------------
+     Config
+  ------------------------- */
+
+  player.configure({
+
+    streaming:{
+
+      lowLatencyMode:false,
+
+      bufferingGoal:10,
+
+      rebufferingGoal:2,
+
+      bufferBehind:30,
+
+      safeSeekOffset:4,
+
+      stallEnabled:true,
+
+      stallThreshold:2,
+
+      retryParameters:{
+
+        maxAttempts:5,
+
+        baseDelay:500,
+
+        backoffFactor:2,
+
+        fuzzFactor:.5,
+
+        timeout:30000
+
+      }
+
+    },
+
+
+    manifest:{
+
+      ignoreTextStreamFailures:true,
+
+      retryParameters:{
+
+        maxAttempts:5,
+
+        baseDelay:500,
+
+        backoffFactor:2,
+
+        fuzzFactor:.5,
+
+        timeout:30000
+
+      }
+
+    },
+
+
+    abr:{
+
+      enabled:true,
+
+      defaultBandwidthEstimate:2000000,
+
+      switchInterval:4
+
     }
+
+  });
+
+
+  /* -------------------------
+     Shaka Errors
+  ------------------------- */
+
+  player.addEventListener(
+    "error",
+    function(event){
+
+      console.error(
+        "Shaka error:",
+        event.detail
+      );
+
+    }
+  );
+
+
+  /* -------------------------
+     LOAD
+  ------------------------- */
+
+  await player.load(
+    url
+  );
+
+
+  hideLoading();
+
+
+  video.play().catch(
+    function(){}
+  );
+
+}
+
+
+/* =========================
+   NATIVE HLS
+========================= */
+
+async function startNativeHLS(url){
+
+  showLoading(
+    "Starting HLS..."
+  );
+
+
+  video.controls =
+    true;
+
+
+  video.src =
+    url;
+
+
+  return new Promise(
+    function(resolve,reject){
+
+      function success(){
+
+        hideLoading();
+
+        video.play().catch(
+          function(){}
+        );
+
+        resolve();
+
+      }
+
+
+      function failed(){
+
+        reject(
+          new Error(
+            "Native HLS playback failed."
+          )
+        );
+
+      }
+
+
+      video.addEventListener(
+        "loadedmetadata",
+        success,
+        {once:true}
+      );
+
+
+      video.addEventListener(
+        "error",
+        failed,
+        {once:true}
+      );
+
+    }
+  );
+
+}
+
+
+/* =========================
+   DESTROY
+========================= */
+
+async function destroyPlayer(){
+
+  if(player){
+
+    try{
+
+      await player.destroy();
+
+    }catch(error){
+
+      console.warn(
+        error
+      );
+
+    }
+
+    player =
+      null;
+
   }
 
-  async function startPlayer(){
-    hideError();
-    showLoading();
-    const url = getStreamURL();
-    if(!url){
-      showError("No stream URL was provided.");
-      return;
-    }
-    streamURL = url;
-    try {
-      await playStream(url);
-      hideLoading();
-    } catch(error) {
-      console.error("Playback error:", error);
-      showError(error.message || "Unable to play stream.");
-    }
+
+  video.pause();
+
+  video.removeAttribute(
+    "src"
+  );
+
+
+  try{
+
+    video.load();
+
+  }catch(error){}
+
+}
+
+
+/* =========================
+   START PLAYER
+========================= */
+
+async function startPlayer(){
+
+  hideError();
+
+  showLoading(
+    "Loading stream..."
+  );
+
+
+  const url =
+    getStreamURL();
+
+
+  if(!url){
+
+    showError(
+      "No stream URL was provided.\n\n" +
+      "Example:\n" +
+      "?url=https://example.com/live/index.m3u8"
+    );
+
+    return;
+
   }
 
-  video.addEventListener("playing", function(){
-    hideLoading();
-    reconnectCount = 0;
-  });
-  video.addEventListener("waiting", function(){ showLoading(); });
-  video.addEventListener("stalled", function(){ showLoading(); });
-  video.addEventListener("canplay", function(){
-    if(!video.paused) hideLoading();
-  });
-  video.addEventListener("error", function(){
-    if(!reconnecting){
-      setTimeout(reconnect, 1500);
-    }
-  });
 
-  document.addEventListener("visibilitychange", function(){
-    if(!document.hidden){
-      setTimeout(function(){
-        if(video.paused && streamURL){
-          video.play().catch(()=>{});
+  streamURL =
+    url;
+
+
+  console.log(
+    "Stream:",
+    streamURL
+  );
+
+
+  await destroyPlayer();
+
+
+  /*
+   * M3U8
+   */
+
+  if(isM3U8(url)){
+
+    try{
+
+      /*
+       * First Shaka
+       */
+
+      await startShaka(
+        url
+      );
+
+      return;
+
+    }catch(error){
+
+      console.warn(
+        "Shaka HLS failed:",
+        error
+      );
+
+
+      await destroyPlayer();
+
+
+      /*
+       * Native HLS fallback
+       */
+
+      if(
+        video.canPlayType(
+          "application/vnd.apple.mpegurl"
+        )
+      ){
+
+        try{
+
+          await startNativeHLS(
+            url
+          );
+
+          return;
+
+        }catch(nativeError){
+
+          console.warn(
+            nativeError
+          );
+
         }
-      }, 300);
+
+      }
+
+
+      showError(
+        "M3U8 stream could not be played.\n\n" +
+        "Possible reasons:\n" +
+        "• CORS restriction\n" +
+        "• Stream is offline\n" +
+        "• Authentication/token required\n" +
+        "• Playlist or segments unavailable"
+      );
+
+
+      return;
+
     }
-  });
 
-  retryButton.addEventListener("click", function(){
-    reconnectCount = 0;
-    reconnecting = false;
-    if(reconnectTimer){ clearTimeout(reconnectTimer); reconnectTimer = null; }
-    startPlayer();
-  });
-
-  setupFullscreenEvents();
-  setNormalVideo();
-  if(document.readyState === "loading"){
-    document.addEventListener("DOMContentLoaded", startPlayer);
-  } else {
-    startPlayer();
   }
+
+
+  /*
+   * MPD
+   */
+
+  if(isMPD(url)){
+
+    try{
+
+      await startShaka(
+        url
+      );
+
+      return;
+
+    }catch(error){
+
+      console.error(
+        error
+      );
+
+
+      showError(
+        "MPD/DASH playback failed.\n\n" +
+        (
+          error.message
+          ||
+          "Unknown error"
+        )
+      );
+
+
+      return;
+
+    }
+
+  }
+
+
+  /*
+   * Unknown format
+   */
+
+  try{
+
+    await startShaka(
+      url
+    );
+
+  }catch(error){
+
+    console.error(
+      error
+    );
+
+
+    showError(
+      "Unable to play this stream.\n\n" +
+      (
+        error.message
+        ||
+        "Unknown error"
+      )
+    );
+
+  }
+
+}
+
+
+/* =========================
+   RETRY
+========================= */
+
+retryButton.addEventListener(
+  "click",
+  function(){
+
+    startPlayer();
+
+  }
+);
+
+
+/* =========================
+   BUFFER RECOVERY
+========================= */
+
+video.addEventListener(
+  "waiting",
+  function(){
+
+    console.log(
+      "Buffering..."
+    );
+
+  }
+);
+
+
+video.addEventListener(
+  "playing",
+  function(){
+
+    hideLoading();
+
+  }
+);
+
+
+/* =========================
+   VISIBILITY
+========================= */
+
+document.addEventListener(
+  "visibilitychange",
+  function(){
+
+    if(!document.hidden){
+
+      setTimeout(
+        function(){
+
+          if(
+            video.paused &&
+            streamURL
+          ){
+
+            video.play().catch(
+              function(){}
+            );
+
+          }
+
+        },
+        500
+      );
+
+    }
+
+  }
+);
+
+
+/* =========================
+   START
+========================= */
+
+document.addEventListener(
+  "DOMContentLoaded",
+  function(){
+
+    startPlayer();
+
+  }
+);
+
 
 })();
+
 </script>
 
 </body>
