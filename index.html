@@ -33,12 +33,10 @@
     video {
       width: 100%;
       height: 100%;
-      object-fit: cover;  /* Full screen, no gaps, no cropping */
+      object-fit: cover;
       background: #000;
       will-change: transform;
-      transition: object-fit .15s ease;
     }
-    /* Both modes use 'cover' – fills entire screen, no empty space */
     video.normal-mode,
     video.fullscreen-mode {
       object-fit: cover;
@@ -114,7 +112,6 @@
       }
     }
 
-    /* Custom control order: settings (gear) to the left of fullscreen */
     .shaka-controls-container .shaka-overflow-menu-button {
       order: 5 !important;
     }
@@ -198,7 +195,6 @@
     try { video.load(); } catch(e) {}
   }
 
-  // Both modes use 'cover' – fills entire screen, no gaps
   function setNormalVideo() {
     video.classList.remove("fullscreen-mode");
     video.classList.add("normal-mode");
