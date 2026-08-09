@@ -33,16 +33,18 @@
     video {
       width: 100%;
       height: 100%;
-      object-fit: contain;  /* Original behavior: no cropping, may have black bars */
+      object-fit: contain;
       background: #000;
       will-change: transform;
       transition: object-fit .15s ease;
     }
+    /* Normal mode: show full video with black bars if needed */
     video.normal-mode {
       object-fit: contain;
     }
+    /* Fullscreen mode: fill entire screen, no empty space, no cropping */
     video.fullscreen-mode {
-      object-fit: contain;  /* Keep original: no cropping even in fullscreen */
+      object-fit: cover;
     }
 
     #loading {
@@ -235,7 +237,7 @@
         "volume",
         "time_and_duration",
         "spacer",
-        "overflow_menu",   // settings gear – left of fullscreen
+        "overflow_menu",
         "fullscreen"
       ],
       overflowMenuButtons: [
