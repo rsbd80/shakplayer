@@ -1,280 +1,323 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Dynamic Player with Rotation & Auto Play</title>
-    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/plyr@3.6.2/dist/plyr.css" />
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        body { 
-            background: #000; 
-            margin: 0; 
-            padding: 0; 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            height: 100vh; 
-            overflow: hidden;
-        }
-        #player { 
-            width: 100%; 
-            max-width: 800px; 
-        }
-        
-        /* রোটেশন স্টাইল */
-        .plyr--video.plyr--rotated-90 .plyr__video-wrapper {
-            transform: rotate(90deg) scale(1.2);
-            width: 100% !important;
-            height: 100% !important;
-        }
-        .plyr--video.plyr--rotated-180 .plyr__video-wrapper {
-            transform: rotate(180deg);
-        }
-        .plyr--video.plyr--rotated-270 .plyr__video-wrapper {
-            transform: rotate(270deg) scale(1.2);
-        }
-        
-        /* ফুলস্ক্রিনে রোটেশন অ্যাডজাস্ট - পুরো স্ক্রিন ফিট */
-        .plyr--fullscreen.plyr--rotated-90 .plyr__video-wrapper,
-        .plyr--fullscreen.plyr--rotated-270 .plyr__video-wrapper {
-            transform: rotate(90deg) scale(1.8);
-            width: 100% !important;
-            height: 100% !important;
-            object-fit: cover !important;
-        }
-        
-        .plyr--fullscreen.plyr--rotated-180 .plyr__video-wrapper {
-            transform: rotate(180deg) scale(1.2);
-        }
-        
-        /* ফুলস্ক্রিনে ভিডিও ফিট */
-        .plyr--fullscreen .plyr__video-wrapper video {
-            object-fit: contain !important;
-            width: 100% !important;
-            height: 100% !important;
-        }
-        
-        /* রোটেশন ইনডিকেটর */
-        .plyr__control--rotate-indicator {
-            position: relative;
-            transition: all 0.3s ease;
-        }
-        .plyr__control--rotate-indicator.active {
-            color: #00b3ff !important;
-            background: rgba(0, 179, 255, 0.2) !important;
-            border-radius: 50%;
-        }
-        .plyr__control--rotate-indicator.active::after {
-            content: '↻';
-            position: absolute;
-            top: -5px;
-            right: -5px;
-            font-size: 12px;
-            color: #00b3ff;
-            animation: spin 2s linear infinite;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        /* মোবাইল ফ্রেন্ডলি */
-        @media (max-width: 768px) {
-            #player { max-width: 100%; }
-            .plyr__controls { padding: 10px 5px; }
-            .plyr__control { padding: 8px; }
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+
+<title>Shaka Player</title>
+
+<link rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/shaka-player@4.16.2/dist/controls.css">
+
+<style>
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+}
+
+html,body{
+  width:100%;
+  height:100%;
+  background:#000;
+  overflow:hidden;
+  font-family:Arial,Helvetica,sans-serif;
+}
+
+#player{
+  position:fixed;
+  inset:0;
+  background:#000;
+}
+
+video{
+  width:100%;
+  height:100%;
+  object-fit:contain;
+  background:#000;
+}
+
+video.fill{
+  object-fit:fill;
+}
+
+video.cover{
+  object-fit:cover;
+}
+
+#error{
+  position:fixed;
+  inset:0;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  flex-direction:column;
+  gap:12px;
+  color:#fff;
+  background:#080808;
+  text-align:center;
+  padding:20px;
+}
+
+#error h2{
+  font-size:18px;
+}
+
+#error p{
+  color:#aaa;
+  font-size:13px;
+  max-width:500px;
+  word-break:break-word;
+}
+
+#loading{
+  position:fixed;
+  inset:0;
+  z-index:20;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex-direction:column;
+  gap:14px;
+  background:#050505;
+  color:#aaa;
+}
+
+.spinner{
+  width:38px;
+  height:38px;
+  border:4px solid #222;
+  border-top-color:#ef4444;
+  border-radius:50%;
+  animation:spin .8s linear infinite;
+}
+
+@keyframes spin{
+  to{transform:rotate(360deg)}
+}
+
+#loading span{
+  font-size:13px;
+}
+</style>
 </head>
+
 <body>
 
-<video id="player" controls crossorigin playsinline autoplay>
-    <source type="application/vnd.apple.mpegurl" src="">
-</video>
+<div id="loading">
+  <div class="spinner"></div>
+  <span>Loading stream...</span>
+</div>
 
-<script src="https://cdn.jsdelivr.net/npm/plyr@3.6.12/dist/plyr.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/hls.js@1.1.4/dist/hls.min.js"></script>
+<div id="error">
+  <h2>Unable to play stream</h2>
+  <p id="errorText"></p>
+</div>
+
+<div id="player">
+  <video
+    id="video"
+    playsinline
+    webkit-playsinline
+    preload="auto">
+  </video>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/shaka-player@4.16.2/dist/shaka-player.compiled.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/shaka-player@4.16.2/dist/shaka-player.ui.min.js"></script>
 
 <script>
-    // URL থেকে url প্যারামিটারটি নেওয়া
-    const urlParams = new URLSearchParams(window.location.search);
-    const videoSrc = urlParams.get('url');
-    
-    const video = document.getElementById('player');
-    const source = video.querySelector('source');
-    
-    if (videoSrc) {
-        source.src = videoSrc;
-    }
+(function(){
 
-    document.addEventListener("DOMContentLoaded", () => {
-        // Plyr প্লেয়ার ইনিশিয়ালাইজ
-        const player = new Plyr(video, {
-            autoplay: true,
-            controls: [
-                'play-large', 'play', 'progress', 'current-time', 'mute', 
-                'volume', 'captions', 'settings', 'pip', 'airplay', 
-                'fullscreen'
-            ]
-        });
+"use strict";
 
-        let isRotated = false;
-        let rotationAngle = 0;
+const video = document.getElementById("video");
+const playerContainer = document.getElementById("player");
+const loading = document.getElementById("loading");
+const errorBox = document.getElementById("error");
+const errorText = document.getElementById("errorText");
 
-        // HLS সাপোর্ট
-        if (Hls.isSupported() && videoSrc) {
-            const hls = new Hls({
-                enableWorker: true,
-                lowLatencyMode: true,
-                backbufferLength: 30
-            });
-            hls.loadSource(videoSrc);
-            hls.attachMedia(video);
-            
-            hls.on(Hls.Events.MANIFEST_PARSED, function() {
-                video.play().catch(function(error) {
-                    console.log('Auto-play was prevented:', error);
-                });
-            });
-        }
+function showError(message){
+  loading.style.display = "none";
+  errorBox.style.display = "flex";
+  errorText.textContent = message;
+}
 
-        // ফুলস্ক্রিন বাটন খুঁজে বের করা
-        const fullscreenBtn = document.querySelector('[data-plyr="fullscreen"]');
-        
-        if (fullscreenBtn) {
-            // ফুলস্ক্রিন বাটনে ক্লিক ইভেন্ট ওভাররাইড
-            fullscreenBtn.addEventListener('click', function(e) {
-                e.stopPropagation();
-                e.preventDefault();
-                
-                // রোটেশন টগল
-                toggleRotation();
-                
-                // ফুলস্ক্রিন টগল
-                player.fullscreen.toggle();
-                
-                // অটোপ্লে নিশ্চিত করা
-                if (video.paused) {
-                    video.play().catch(function(error) {
-                        console.log('Play prevented:', error);
-                    });
-                }
-            });
-        }
+function getURL(){
 
-        // রোটেশন টগল ফাংশন
-        function toggleRotation() {
-            const plyrElement = player.elements.container;
-            
-            // পুরানো রোটেশন ক্লাস সরান
-            plyrElement.classList.remove('plyr--rotated-90', 'plyr--rotated-180', 'plyr--rotated-270');
-            
-            if (!isRotated) {
-                // রোটেট করুন (৯০ ডিগ্রি)
-                plyrElement.classList.add('plyr--rotated-90');
-                rotationAngle = 90;
-                isRotated = true;
-                
-                // ফুলস্ক্রিনে থাকলে পুরো স্ক্রিন কভার
-                if (document.fullscreenElement) {
-                    document.documentElement.style.transform = 'rotate(90deg)';
-                    document.documentElement.style.width = '100vh';
-                    document.documentElement.style.height = '100vw';
-                    document.documentElement.style.transformOrigin = 'center center';
-                    document.documentElement.style.overflow = 'hidden';
-                    
-                    // ভিডিও পুরো স্ক্রিন ফিট
-                    video.style.objectFit = 'cover';
-                    video.style.width = '100%';
-                    video.style.height = '100%';
-                }
-            } else {
-                // নরমালে ফিরে যান
-                isRotated = false;
-                rotationAngle = 0;
-                
-                // ভিউপোর্ট রিসেট
-                document.documentElement.style.transform = '';
-                document.documentElement.style.width = '';
-                document.documentElement.style.height = '';
-                document.documentElement.style.transformOrigin = '';
-                document.documentElement.style.overflow = '';
-                
-                video.style.objectFit = '';
-                video.style.width = '';
-                video.style.height = '';
-            }
-            
-            // ফুলস্ক্রিন বাটনে ইন্ডিকেটর দেখান
-            if (isRotated) {
-                fullscreenBtn.classList.add('active');
-            } else {
-                fullscreenBtn.classList.remove('active');
-            }
-        }
+  const params = new URLSearchParams(location.search);
 
-        // ফুলস্ক্রিন চেঞ্জ ইভেন্ট
-        document.addEventListener('fullscreenchange', () => {
-            if (!document.fullscreenElement) {
-                // ফুলস্ক্রিন থেকে বের হলে রিসেট
-                document.documentElement.style.transform = '';
-                document.documentElement.style.width = '';
-                document.documentElement.style.height = '';
-                document.documentElement.style.transformOrigin = '';
-                document.documentElement.style.overflow = '';
-                
-                video.style.objectFit = '';
-                video.style.width = '';
-                video.style.height = '';
-                
-                // রোটেশন অ্যাক্টিভ থাকলে সেটা রাখুন
-                if (isRotated) {
-                    const plyrElement = player.elements.container;
-                    plyrElement.classList.add('plyr--rotated-90');
-                }
-            } else if (isRotated) {
-                // ফুলস্ক্রিনে রোটেটেড থাকলে পুরো স্ক্রিন কভার
-                document.documentElement.style.transform = 'rotate(90deg)';
-                document.documentElement.style.width = '100vh';
-                document.documentElement.style.height = '100vw';
-                document.documentElement.style.transformOrigin = 'center center';
-                document.documentElement.style.overflow = 'hidden';
-                
-                video.style.objectFit = 'cover';
-                video.style.width = '100%';
-                video.style.height = '100%';
-            }
-        });
+  const url = params.get("url");
 
-        // অটোপ্লে চেষ্টা
-        video.addEventListener('loadedmetadata', function() {
-            video.play().catch(function(error) {
-                console.log('Auto-play was prevented:', error);
-                // ইউজার ইন্টারঅ্যাকশনের জন্য অপেক্ষা
-                document.addEventListener('click', function playOnClick() {
-                    video.play();
-                    document.removeEventListener('click', playOnClick);
-                }, { once: true });
-            });
-        });
+  if(!url){
+    return null;
+  }
 
-        // কিবোর্ড শর্টকাট: F কী প্রেস করলে রোটেট+ফুলস্ক্রিন হবে
-        document.addEventListener('keydown', (e) => {
-            if ((e.key === 'f' || e.key === 'F') && !e.ctrlKey && !e.metaKey) {
-                e.preventDefault();
-                if (fullscreenBtn) {
-                    fullscreenBtn.click();
-                }
-            }
-        });
+  try{
+    return decodeURIComponent(url);
+  }catch(e){
+    return url;
+  }
+}
 
-        console.log('🎬 প্লেয়ার লোড হয়েছে! ফুলস্ক্রিন বাটনে ক্লিক করলে রোটেট + অটোপ্লে হবে।');
+async function start(){
+
+  const streamURL = getURL();
+
+  if(!streamURL){
+    showError(
+      "No stream URL was provided. Use ?url=YOUR_STREAM_URL"
+    );
+    return;
+  }
+
+  shaka.polyfill.installAll();
+
+  if(!shaka.Player.isBrowserSupported()){
+    showError("This browser does not support Shaka Player.");
+    return;
+  }
+
+  const player = new shaka.Player();
+
+  try{
+
+    await player.attach(video);
+
+    /*
+     * Shaka UI configuration
+     */
+    new shaka.ui.Overlay(
+      player,
+      playerContainer,
+      video
+    ).configure({
+
+      controlPanelElements:[
+        "play_pause",
+        "mute",
+        "volume",
+        "time_and_duration",
+        "spacer",
+        "quality",
+        "fullscreen",
+        "overflow_menu"
+      ],
+
+      overflowMenuButtons:[
+        "quality",
+        "picture_in_picture",
+        "loop",
+        "playback_rate"
+      ],
+
+      seekBarColors:{
+        base:"#777",
+        buffered:"#7f1d1d",
+        played:"#ef4444"
+      }
+
     });
+
+    /*
+     * Streaming configuration
+     */
+    player.configure({
+
+      streaming:{
+        bufferingGoal:10,
+        rebufferingGoal:2,
+        bufferBehind:30,
+        lowLatencyMode:false,
+
+        retryParameters:{
+          maxAttempts:5,
+          baseDelay:500,
+          backoffFactor:2,
+          fuzzFactor:.5,
+          timeout:30000
+        }
+      },
+
+      manifest:{
+        retryParameters:{
+          maxAttempts:5,
+          baseDelay:500,
+          backoffFactor:2,
+          fuzzFactor:.5,
+          timeout:30000
+        }
+      },
+
+      abr:{
+        enabled:true,
+        defaultBandwidthEstimate:2000000,
+        switchInterval:4
+      }
+
+    });
+
+    /*
+     * Load stream
+     */
+    await player.load(streamURL);
+
+    loading.style.display = "none";
+
+    /*
+     * Try autoplay.
+     */
+    video.play().catch(function(){
+      // Browser may require user interaction.
+    });
+
+    /*
+     * Error handling
+     */
+    player.addEventListener("error",function(event){
+
+      const error = event.detail;
+
+      console.error("Shaka error:",error);
+
+    });
+
+    /*
+     * Video errors
+     */
+    video.addEventListener("error",function(){
+
+      if(video.error){
+
+        showError(
+          "Video error: " +
+          video.error.code
+        );
+
+      }
+
+    });
+
+  }catch(error){
+
+    console.error(error);
+
+    showError(
+      "Stream could not be loaded: " +
+      (error.message || "Unknown error")
+    );
+
+  }
+
+}
+
+document.addEventListener(
+  "DOMContentLoaded",
+  start
+);
+
+})();
 </script>
 
 </body>
