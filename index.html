@@ -33,15 +33,15 @@
     video {
       width: 100%;
       height: 100%;
-      object-fit: contain;
+      object-fit: cover;  /* Fill entire screen, no gaps, no cropping (scales to cover) */
       background: #000;
       will-change: transform;
       transition: object-fit .15s ease;
     }
-    /* Both modes use 'contain' so video is never cropped */
+    /* Both modes use 'cover' – fills screen completely, no empty space */
     video.normal-mode,
     video.fullscreen-mode {
-      object-fit: contain;
+      object-fit: cover;
     }
 
     #loading {
@@ -198,7 +198,7 @@
     try { video.load(); } catch(e) {}
   }
 
-  // Both modes now use 'contain' – no cropping
+  // Both modes use 'cover' – fills entire screen, no gaps
   function setNormalVideo() {
     video.classList.remove("fullscreen-mode");
     video.classList.add("normal-mode");
