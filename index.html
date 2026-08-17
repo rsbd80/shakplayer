@@ -572,7 +572,8 @@ button{
     id="video"
     playsinline
     webkit-playsinline
-    preload="auto">
+    preload="auto"
+    autoplay>
   </video>
 
 </div>
@@ -1564,9 +1565,12 @@ async function startShaka(url){
   hideLoading();
 
 
-  video.play().catch(
-    function(){}
-  );
+  // Force autoplay after load
+  try {
+    await video.play();
+  } catch (e) {
+    console.warn("Autoplay blocked, waiting for user interaction");
+  }
 
 }
 
