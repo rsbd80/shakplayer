@@ -1,1964 +1,822 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>RS Player Pro</title>
 
-<meta name="viewport"
-      content="width=device-width,
-               initial-scale=1,
-               maximum-scale=1,
-               user-scalable=no,
-               viewport-fit=cover">
-
-<meta name="referrer" content="no-referrer">
-
-<title>Shaka Player</title>
-
-<link rel="stylesheet"
-      href="https://cdn.jsdelivr.net/npm/shaka-player@4.16.2/dist/controls.css">
-
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/shaka-player@4.16.2/dist/controls.css">
+<script src="https://cdn.jsdelivr.net/npm/shaka-player@4.16.2/dist/shaka-player.ui.js"></script>
 
 <style>
-
-/* =========================
-   RESET
-========================= */
+:root{
+ --bg-1:#0a0a12;
+ --bg-2:#14101f;
+ --grad-a:#22d3ee;
+ --grad-b:#a78bfa;
+ --grad-c:#fb923c;
+ --warn:#ffb84d;
+ --alert:#ff5d5d;
+ --text:#eef0f7;
+ --text-dim:#7a7a92;
+ --font:'Poppins','Segoe UI',sans-serif;
+ --mono:'JetBrains Mono','Courier New',monospace;
+}
 
 *{
-  margin:0;
-  padding:0;
-  box-sizing:border-box;
+ margin:0;
+ padding:0;
+ box-sizing:border-box;
+ -webkit-tap-highlight-color:transparent;
 }
 
-html,
-body{
-  width:100%;
-  height:100%;
-  background:#000;
-  overflow:hidden;
-
-  font-family:
-    "Segoe UI",
-    Roboto,
-    Helvetica,
-    Arial,
-    sans-serif;
-
-  -webkit-user-select:none;
-  user-select:none;
-
-  -webkit-touch-callout:none;
+html,body{
+ width:100%;
+ height:100%;
+ background:#000;
+ overflow:hidden;
+ font-family:var(--font);
+ position:fixed;
+ inset:0;
+ overscroll-behavior:none;
 }
 
+body{touch-action:pan-x pan-y}
 
-/* =========================
-   PLAYER
-========================= */
+/* PLAYER AREA - FULL SCREEN */
 
-#player{
-  position:fixed;
-  inset:0;
-
-  width:100%;
-  height:100%;
-
-  background:#000;
-
-  touch-action:manipulation;
+#player-wrapper{
+ position:fixed;
+ top:0;
+ left:0;
+ right:0;
+ bottom:0;
+ width:100%;
+ overflow:hidden;
+ background:#000;
+ contain:layout paint;
 }
 
-
-video{
-  width:100%;
-  height:100%;
-
-  object-fit:contain;
-
-  background:#000;
-
-  will-change:transform;
+#video-container{
+ position:absolute;
+ inset:0;
+ width:100%;
+ height:100%;
+ background:#000;
+ overflow:hidden;
 }
 
-
-/* Fit */
-
-video.mode-fit{
-  object-fit:contain;
+#video{
+ width:100%!important;
+ height:100%!important;
+ object-fit:fill!important;
+ background:#000;
+ touch-action:manipulation;
+ -webkit-user-select:none;
+ user-select:none;
 }
-
-
-/* Fill */
-
-video.mode-fill{
-  object-fit:fill;
-}
-
-
-/* Zoom */
-
-video.mode-zoom{
-  object-fit:cover;
-}
-
-
-/* =========================
-   LOADING
-========================= */
-
-#loading{
-  position:fixed;
-  inset:0;
-
-  z-index:9999;
-
-  display:flex;
-
-  align-items:center;
-  justify-content:center;
-
-  flex-direction:column;
-
-  gap:15px;
-
-  background:#050505;
-}
-
-
-.spinner{
-
-  width:40px;
-  height:40px;
-
-  border-radius:50%;
-
-  border:4px solid #222;
-
-  border-top-color:#ef4444;
-
-  animation:
-    spin .8s linear infinite;
-
-}
-
-
-@keyframes spin{
-
-  to{
-    transform:rotate(360deg);
-  }
-
-}
-
-
-#loadingText{
-
-  color:#999;
-
-  font-size:13px;
-
-  letter-spacing:.3px;
-
-}
-
-
-/* =========================
-   ERROR
-========================= */
-
-#error{
-
-  position:fixed;
-
-  inset:0;
-
-  z-index:10000;
-
-  display:none;
-
-  align-items:center;
-
-  justify-content:center;
-
-  flex-direction:column;
-
-  gap:12px;
-
-  padding:25px;
-
-  background:#080808;
-
-  color:#fff;
-
-  text-align:center;
-
-}
-
-
-#error h2{
-
-  font-size:18px;
-
-  font-weight:600;
-
-}
-
-
-#error p{
-
-  max-width:600px;
-
-  color:#999;
-
-  font-size:13px;
-
-  line-height:1.6;
-
-  word-break:break-word;
-
-}
-
-
-#retry{
-
-  margin-top:8px;
-
-  padding:10px 22px;
-
-  border:0;
-
-  border-radius:7px;
-
-  background:#ef4444;
-
-  color:#fff;
-
-  font-size:13px;
-
-  cursor:pointer;
-
-}
-
-
-/* =========================
-   CUSTOM FIT BUTTON
-========================= */
-
-.sp-fit-btn{
-
-  background:transparent!important;
-
-  border:none!important;
-
-  color:#fff!important;
-
-  cursor:pointer!important;
-
-  padding:0 7px!important;
-
-  margin:0!important;
-
-  height:100%;
-
-  min-width:48px;
-
-  display:flex;
-
-  align-items:center;
-
-  justify-content:center;
-
-  gap:4px;
-
-  opacity:.85;
-
-  transition:
-    opacity .15s,
-    transform .15s;
-
-  -webkit-tap-highlight-color:
-    transparent;
-
-}
-
-
-.sp-fit-btn:hover{
-
-  opacity:1;
-
-}
-
-
-.sp-fit-btn:active{
-
-  opacity:1;
-
-  transform:scale(.92);
-
-}
-
-
-.sp-fit-btn:focus-visible{
-
-  outline:
-    2px solid #ef4444;
-
-  outline-offset:2px;
-
-  border-radius:5px;
-
-}
-
-
-.fit-icon{
-
-  width:18px;
-  height:18px;
-
-  display:flex;
-
-  align-items:center;
-  justify-content:center;
-
-}
-
-
-.fit-icon svg{
-
-  width:18px;
-  height:18px;
-
-  display:block;
-
-}
-
-
-.fit-ratio{
-
-  color:#fff;
-
-  font-size:10px;
-
-  font-weight:600;
-
-  line-height:1;
-
-  white-space:nowrap;
-
-}
-
-
-/* =========================
-   CUSTOM PIP BUTTON
-========================= */
-
-.sp-pip-btn{
-
-  background:transparent!important;
-
-  border:none!important;
-
-  color:#fff!important;
-
-  cursor:pointer!important;
-
-  padding:0 7px!important;
-
-  margin:0!important;
-
-  height:100%;
-
-  min-width:40px;
-
-  display:flex;
-
-  align-items:center;
-
-  justify-content:center;
-
-  opacity:.85;
-
-  transition:
-    opacity .15s,
-    transform .15s;
-
-}
-
-
-.sp-pip-btn:hover{
-
-  opacity:1;
-
-}
-
-
-.sp-pip-btn:active{
-
-  transform:scale(.92);
-
-}
-
-
-.sp-pip-btn.active{
-
-  color:#ef4444!important;
-
-  opacity:1;
-
-}
-
-
-.sp-pip-btn svg{
-
-  width:18px;
-  height:18px;
-
-}
-
-
-/* =========================
-   SHAKA
-========================= */
-
-.shaka-controls-container
-.shaka-controls-button-panel
-button{
-
-  color:#fff!important;
-
-}
-
-
-.shaka-controls-container
-.shaka-play-button{
-
-  color:#ef4444!important;
-
-}
-
-
-.shaka-controls-container
-.shaka-mute-button{
-
-  color:#ef4444!important;
-
-}
-
-
-.shaka-controls-container
-.shaka-fullscreen-button{
-
-  color:#fff!important;
-
-}
-
-
-.shaka-controls-container
-.shaka-overflow-menu-button{
-
-  color:#fff!important;
-
-}
-
-
-.shaka-controls-container
-.shaka-seek-bar
-.shaka-seek-bar-played{
-
-  background:#ef4444!important;
-
-}
-
-
-.shaka-controls-container
-.shaka-seek-bar
-.shaka-seek-bar-buffered{
-
-  background:#7f1d1d!important;
-
-}
-
 
 .shaka-video-container{
-
-  background:#000!important;
-
+ width:100%!important;
+ height:100%!important;
 }
 
+.shaka-controls-container{z-index:20!important}
+.shaka-controls-container button{touch-action:manipulation}
+.shaka-range-container input{accent-color:var(--grad-b)}
+.shaka-bottom-controls{padding-bottom:5px!important}
 
-/* =========================
-   MOBILE
-========================= */
-
-@media(max-width:500px){
-
-  .fit-ratio{
-
-    font-size:9px;
-
-  }
-
-  .sp-fit-btn{
-
-    padding:
-      0 5px!important;
-
-    min-width:42px;
-
-  }
-
-  .sp-pip-btn{
-
-    padding:
-      0 5px!important;
-
-    min-width:36px;
-
-  }
-
+#player-wrapper.native-mode .shaka-controls-container{
+ display:none!important;
 }
 
+/* LOADER */
 
+#loader{
+ position:absolute;
+ inset:0;
+ background:radial-gradient(80% 60% at 50% 40%,var(--bg-2) 0%,var(--bg-1) 70%);
+ display:flex;
+ justify-content:center;
+ align-items:center;
+ flex-direction:column;
+ z-index:99;
+ transition:opacity .1s ease,visibility .1s ease;
+ pointer-events:none;
+}
+
+#loader.hide-now{
+ opacity:0!important;
+ visibility:hidden!important;
+ pointer-events:none!important;
+}
+
+.tuner{
+ display:flex;
+ flex-direction:column;
+ align-items:center;
+ gap:20px;
+}
+
+.tv-wrap{
+ position:relative;
+ width:78px;
+ height:78px;
+ display:flex;
+ align-items:center;
+ justify-content:center;
+}
+
+.tv-glow{
+ position:absolute;
+ width:100%;
+ height:100%;
+ border-radius:50%;
+ background:radial-gradient(circle,rgba(167,139,250,.35),transparent 70%);
+ animation:glow-pulse 2.4s ease-in-out infinite;
+}
+
+@keyframes glow-pulse{
+ 0%,100%{transform:scale(.85);opacity:.5}
+ 50%{transform:scale(1.15);opacity:1}
+}
+
+.tv-icon{position:relative;width:60px;height:60px}
+.tv-icon .tv-body{
+ fill:none;
+ stroke:var(--text);
+ stroke-width:2;
+ stroke-linecap:round;
+ stroke-linejoin:round;
+}
+
+.tv-icon .screen-bars rect{
+ transform-origin:bottom;
+ animation:bar-flicker 1.6s ease-in-out infinite;
+}
+
+.tv-icon .screen-bars rect:nth-child(1){fill:var(--grad-a);animation-delay:-1.2s}
+.tv-icon .screen-bars rect:nth-child(2){fill:var(--grad-b);animation-delay:-.9s}
+.tv-icon .screen-bars rect:nth-child(3){fill:var(--grad-c);animation-delay:-.6s}
+.tv-icon .screen-bars rect:nth-child(4){fill:var(--grad-b);animation-delay:-.3s}
+.tv-icon .screen-bars rect:nth-child(5){fill:var(--grad-a);animation-delay:0s}
+
+@keyframes bar-flicker{
+ 0%,100%{transform:scaleY(.45);opacity:.65}
+ 50%{transform:scaleY(1);opacity:1}
+}
+
+.brand-name{
+ font-size:15px;
+ font-weight:700;
+ letter-spacing:1px;
+ text-transform:uppercase;
+ background:linear-gradient(90deg,var(--grad-a),var(--grad-b));
+ -webkit-background-clip:text;
+ background-clip:text;
+ color:transparent;
+}
+
+.brand-name b{
+ color:var(--text);
+ -webkit-text-fill-color:var(--text);
+}
+
+.dots{display:flex;gap:6px}
+.dots span{
+ width:6px;
+ height:6px;
+ border-radius:50%;
+ background:var(--grad-b);
+ animation:dot-pulse 1.2s ease-in-out infinite;
+}
+.dots span:nth-child(2){animation-delay:.2s}
+.dots span:nth-child(3){animation-delay:.4s}
+
+@keyframes dot-pulse{
+ 0%,80%,100%{transform:scale(.6);opacity:.35}
+ 40%{transform:scale(1);opacity:1}
+}
+
+.status-line{
+ font-family:var(--mono);
+ font-size:9.5px;
+ letter-spacing:2.5px;
+ color:var(--text-dim);
+ text-transform:uppercase;
+}
+
+/* ERROR */
+
+.state-content{
+ text-align:center;
+ color:var(--text);
+ z-index:100;
+ padding:0 24px;
+ pointer-events:auto;
+}
+
+.state-content .glyph{
+ font-size:34px;
+ color:var(--alert);
+ margin-bottom:14px;
+}
+
+.state-content .glyph.warn{color:var(--warn)}
+.state-content p.title{font-size:13px;letter-spacing:1px;font-weight:600}
+.state-content p.sub{
+ font-family:var(--mono);
+ font-size:10.5px;
+ color:var(--text-dim);
+ margin-top:8px;
+ letter-spacing:.5px;
+ max-width:280px;
+ overflow-wrap:anywhere;
+}
+
+.state-content .brand-name{display:block;margin-top:18px}
+
+.retry-btn{
+ margin-top:16px;
+ padding:8px 20px;
+ font-family:var(--font);
+ font-weight:600;
+ font-size:11px;
+ color:#0a0a12;
+ background:linear-gradient(90deg,var(--grad-a),var(--grad-b));
+ border:none;
+ border-radius:18px;
+ cursor:pointer;
+}
+
+/* FULLSCREEN */
+
+#player-wrapper:fullscreen,
+#player-wrapper:-webkit-full-screen{
+ position:fixed;
+ inset:0;
+ width:100vw;
+ height:100vh;
+ background:#000;
+}
+
+#player-wrapper:fullscreen #video-container,
+#player-wrapper:-webkit-full-screen #video-container{
+ width:100%;
+ height:100%;
+}
+
+#player-wrapper:fullscreen #video,
+#player-wrapper:-webkit-full-screen #video{
+ width:100%!important;
+ height:100%!important;
+ object-fit:fill!important;
+}
+
+#video-container,#video{
+ -webkit-user-select:none;
+ user-select:none;
+}
 </style>
-
 </head>
-
 
 <body>
 
+<div id="player-wrapper">
 
-<!-- =========================
-     LOADING
-========================= -->
+ <div id="video-container">
+  <video id="video" playsinline webkit-playsinline preload="auto"></video>
+ </div>
 
-<div id="loading">
+ <div id="loader">
+  <div class="tuner">
 
-  <div class="spinner"></div>
+   <div class="tv-wrap">
+    <div class="tv-glow"></div>
 
-  <div id="loadingText">
-    Loading stream...
+    <svg class="tv-icon" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+     <path class="tv-body" d="M22 12 32 20 42 12"/>
+     <clipPath id="screenClip">
+      <rect x="12" y="20" width="40" height="26" rx="4"/>
+     </clipPath>
+     <g class="screen-bars" clip-path="url(#screenClip)">
+      <rect x="12" y="20" width="8" height="26"/>
+      <rect x="20" y="20" width="8" height="26"/>
+      <rect x="28" y="20" width="8" height="26"/>
+      <rect x="36" y="20" width="8" height="26"/>
+      <rect x="44" y="20" width="8" height="26"/>
+     </g>
+     <rect class="tv-body" x="12" y="20" width="40" height="26" rx="4"/>
+     <line class="tv-body" x1="24" y1="46" x2="24" y2="50"/>
+     <line class="tv-body" x1="40" y1="46" x2="40" y2="50"/>
+     <line class="tv-body" x1="20" y1="50" x2="44" y2="50"/>
+    </svg>
+   </div>
+
+   <div class="brand-name"><b>RS LIVE</b> TV</div>
+
+   <div class="dots">
+    <span></span><span></span><span></span>
+   </div>
+
+   <div class="status-line" id="status-line">LOADING</div>
   </div>
+ </div>
 
 </div>
-
-
-<!-- =========================
-     ERROR
-========================= -->
-
-<div id="error">
-
-  <h2>
-    Unable to play stream
-  </h2>
-
-  <p id="errorText"></p>
-
-  <button id="retry">
-    Retry
-  </button>
-
-</div>
-
-
-<!-- =========================
-     PLAYER
-========================= -->
-
-<div id="player">
-
-  <video
-    id="video"
-    playsinline
-    webkit-playsinline
-    preload="auto"
-    autoplay>
-  </video>
-
-</div>
-
-
-<!-- =========================
-     SHAKA
-========================= -->
-
-<script src="https://cdn.jsdelivr.net/npm/shaka-player@4.16.2/dist/shaka-player.compiled.js">
-</script>
-
-<script src="https://cdn.jsdelivr.net/npm/shaka-player@4.16.2/dist/shaka-player.ui.min.js">
-</script>
-
 
 <script>
+/* STREAM SETTINGS */
 
-(function(){
+const urlParams = new URLSearchParams(window.location.search);
+const streamSource = urlParams.get('url');
+const forcedType = (urlParams.get('type') || '').toLowerCase();
+const startMuted = urlParams.get('mute') === '1';
 
-"use strict";
+const wrapper = document.getElementById('player-wrapper');
+const videoContainer = document.getElementById('video-container');
+const video = document.getElementById('video');
+const loaderEl = document.getElementById('loader');
+const statusEl = document.getElementById('status-line');
 
+/* LOADER */
 
-/* =========================
-   ELEMENTS
-========================= */
+const statusMessages = ['LOADING','CONNECTING','BUFFERING'];
+let statusIdx = 0;
 
-const video =
-  document.getElementById("video");
+const statusTimer = setInterval(() => {
+ if(loaderEl.classList.contains('hide-now')) return;
+ statusIdx = (statusIdx + 1) % statusMessages.length;
+ statusEl.textContent = statusMessages[statusIdx];
+},1800);
 
-const playerContainer =
-  document.getElementById("player");
+function showLoader(){
+ loaderEl.classList.remove('hide-now');
+}
 
-const loading =
-  document.getElementById("loading");
+function hideLoader(){
+ loaderEl.classList.add('hide-now');
+}
 
-const loadingText =
-  document.getElementById("loadingText");
+function showState(html){
+ clearInterval(statusTimer);
+ loaderEl.innerHTML = html;
+ showLoader();
+}
 
-const errorBox =
-  document.getElementById("error");
+function brandBlock(){
+ return '<div class="brand-name"><b>RS LIVE</b> TV</div>';
+}
 
-const errorText =
-  document.getElementById("errorText");
+/* WAKE LOCK */
 
-const retryButton =
-  document.getElementById("retry");
+let wakeLock = null;
+let wakeLockWanted = false;
 
+async function requestWakeLock(){
+ wakeLockWanted = true;
 
-let player = null;
+ if(!('wakeLock' in navigator)) return;
+ if(wakeLock) return;
+ if(document.visibilityState !== 'visible') return;
 
-let streamURL = null;
+ try{
+  wakeLock = await navigator.wakeLock.request('screen');
+  wakeLock.addEventListener('release',() => {
+   wakeLock = null;
+  });
+ }catch(e){
+  wakeLock = null;
+ }
+}
 
-let fitIndex = 0;
+async function releaseWakeLock(){
+ wakeLockWanted = false;
 
-let reconnectTimer = null;
+ if(wakeLock){
+  try{await wakeLock.release();}catch(e){}
+  wakeLock = null;
+ }
+}
 
+document.addEventListener('visibilitychange',() => {
+ if(document.visibilityState === 'visible' && wakeLockWanted){
+  requestWakeLock();
+ }
+});
 
-/* =========================
-   GET URL
-========================= */
+/* STREAM TYPE */
 
-function getStreamURL(){
+function detectType(raw){
+ if(forcedType) return forcedType;
 
-  const params =
-    new URLSearchParams(
-      window.location.search
-    );
+ const clean = raw.split('?')[0].split('#')[0].toLowerCase();
 
-  let url =
-    params.get("url");
+ if(clean.endsWith('.m3u8')) return 'hls';
+ if(clean.endsWith('.mpd')) return 'dash';
+ if(clean.endsWith('.mp4') || clean.endsWith('.mov')) return 'mp4';
+ if(clean.endsWith('.webm')) return 'webm';
+ if(clean.endsWith('.ogg') || clean.endsWith('.ogv')) return 'ogg';
 
-  if(!url){
-    return null;
+ if(raw.toLowerCase().includes('.m3u8')) return 'hls';
+ if(raw.toLowerCase().includes('.mpd')) return 'dash';
+
+ return null;
+}
+
+function isDirectFile(type){
+ return ['mp4','webm','ogg'].includes(type);
+}
+
+/* NO STREAM URL */
+
+if(!streamSource){
+
+ showState(`
+  <div class="state-content">
+   <div class="glyph warn">&#9888;</div>
+   <p class="title">No stream URL supplied</p>
+   <p class="sub">Add ?url=YOUR_STREAM_LINK to this page's address.</p>
+   ${brandBlock()}
+  </div>
+ `);
+
+}else{
+
+ const streamType = detectType(streamSource);
+
+ let player = null;
+ let ui = null;
+ let retryCount = 0;
+ const maxRetries = 6;
+
+ let retryTimer = null;
+ let noStreamTimer = null;
+ let everPlayed = false;
+ let userPaused = false;
+ let isRetrying = false;
+ let isNative = false;
+ let destroyed = false;
+
+ const NO_STREAM_TIMEOUT = 12000;
+
+ video.muted = startMuted;
+
+ function applyVideoStyle(){
+  video.style.width = '100%';
+  video.style.height = '100%';
+  video.style.objectFit = 'fill';
+  video.style.touchAction = 'manipulation';
+  video.setAttribute('playsinline','');
+ }
+
+ function onFirstPlayback(){
+  clearTimeout(noStreamTimer);
+  hideLoader();
+
+  if(!everPlayed){
+   everPlayed = true;
+   retryCount = 0;
+  }else{
+   retryCount = 0;
   }
+
+  requestWakeLock();
+ }
+
+ function showNoStreamState(err){
+  clearTimeout(retryTimer);
+  clearTimeout(noStreamTimer);
+  releaseWakeLock();
+
+  const message = err && err.message
+   ? String(err.message)
+   : 'The source could not be reached.';
+
+  const safeMessage = message.replace(/[&<>"']/g,char => ({
+   '&':'&amp;',
+   '<':'&lt;',
+   '>':'&gt;',
+   '"':'&quot;',
+   "'":'&#39;'
+  })[char]);
+
+  showState(`
+   <div class="state-content">
+    <div class="glyph">&#10060;</div>
+    <p class="title">No streaming — this link won't play</p>
+    <p class="sub">${safeMessage}</p>
+    <button class="retry-btn" onclick="location.reload()">Retry</button>
+    ${brandBlock()}
+   </div>
+  `);
+ }
+
+ async function loadStream(){
+  if(userPaused || destroyed) return;
+
+  isRetrying = true;
+  showLoader();
+  statusEl.textContent = 'RECONNECTING';
 
   try{
+   if(isNative){
+    video.pause();
+    video.src = streamSource;
+    video.load();
+   }else{
+    if(!player) throw new Error('Player is not ready.');
+    await player.load(streamSource);
+   }
 
-    return decodeURIComponent(url);
+   const result = video.play();
+   if(result && result.catch){
+    await result.catch(() => {});
+   }
 
-  }catch(e){
+   isRetrying = false;
+  }catch(error){
+   isRetrying = false;
+   console.error('[RS Player] reconnect error:',error);
 
-    return url;
+   if(retryCount < maxRetries){
+    retryCount++;
+    statusEl.textContent = 'RECONNECTING ('+retryCount+'/'+maxRetries+')';
 
+    clearTimeout(retryTimer);
+    retryTimer = setTimeout(loadStream,Math.min(1000*retryCount,4000));
+   }else{
+    showNoStreamState(error);
+   }
   }
+ }
 
-}
+ function handleFault(error){
+  console.error('[RS Player] error:',error);
 
+  if(userPaused || destroyed) return;
 
-/* =========================
-   UI
-========================= */
+  if(retryCount < maxRetries){
+   retryCount++;
+   clearTimeout(retryTimer);
+   showLoader();
 
-function showLoading(text){
+   statusEl.textContent = 'RECONNECTING ('+retryCount+'/'+maxRetries+')';
 
-  loadingText.textContent =
-    text || "Loading stream...";
-
-  loading.style.display =
-    "flex";
-
-  errorBox.style.display =
-    "none";
-
-}
-
-
-function hideLoading(){
-
-  loading.style.display =
-    "none";
-
-}
-
-
-function showError(message){
-
-  hideLoading();
-
-  errorText.textContent =
-    message;
-
-  errorBox.style.display =
-    "flex";
-
-}
-
-
-function hideError(){
-
-  errorBox.style.display =
-    "none";
-
-}
-
-
-/* =========================
-   STREAM TYPE
-========================= */
-
-function isM3U8(url){
-
-  return /\.m3u8($|[?#])/i
-    .test(url);
-
-}
-
-
-function isMPD(url){
-
-  return /\.mpd($|[?#])/i
-    .test(url);
-
-}
-
-
-/* =========================
-   RATIO
-========================= */
-
-function getRatio(){
-
-  const width =
-    video.videoWidth;
-
-  const height =
-    video.videoHeight;
-
-  if(!width || !height){
-
-    return "";
-
-  }
-
-
-  const ratio =
-    width / height;
-
-
-  if(
-    Math.abs(
-      ratio - (16/9)
-    ) < .03
-  ){
-
-    return "16:9";
-
-  }
-
-
-  if(
-    Math.abs(
-      ratio - (4/3)
-    ) < .03
-  ){
-
-    return "4:3";
-
-  }
-
-
-  if(
-    Math.abs(
-      ratio - (21/9)
-    ) < .04
-  ){
-
-    return "21:9";
-
-  }
-
-
-  if(
-    Math.abs(
-      ratio - 1
-    ) < .03
-  ){
-
-    return "1:1";
-
-  }
-
-
-  return ratio.toFixed(2)+":1";
-
-}
-
-
-/* =========================
-   FIT ICONS
-========================= */
-
-const FIT_ICONS = {
-
-  fit:`
-
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    stroke-width="2"
-    stroke-linecap="round"
-    stroke-linejoin="round">
-
-    <rect
-      x="2"
-      y="3"
-      width="20"
-      height="14"
-      rx="2"/>
-
-    <line
-      x1="2"
-      y1="21"
-      x2="22"
-      y2="21"/>
-
-  </svg>
-
-  `,
-
-
-  fill:`
-
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    stroke-width="2"
-    stroke-linecap="round"
-    stroke-linejoin="round">
-
-    <rect
-      x="3"
-      y="3"
-      width="18"
-      height="18"
-      rx="2"/>
-
-    <path d="M3 9h18"/>
-    <path d="M3 15h18"/>
-    <path d="M9 3v18"/>
-    <path d="M15 3v18"/>
-
-  </svg>
-
-  `,
-
-
-  zoom:`
-
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    stroke-width="2"
-    stroke-linecap="round"
-    stroke-linejoin="round">
-
-    <rect
-      x="2"
-      y="3"
-      width="20"
-      height="14"
-      rx="2"/>
-
-    <path d="M6 7l3 3"/>
-    <path d="M9 10H7"/>
-    <path d="M9 10V8"/>
-
-    <path d="M18 7l-3 3"/>
-    <path d="M15 10h2"/>
-    <path d="M15 10V8"/>
-
-    <path d="M6 13l3-3"/>
-    <path d="M9 10H7"/>
-    <path d="M9 10v2"/>
-
-    <path d="M18 13l-3-3"/>
-    <path d="M15 10h2"/>
-    <path d="M15 10v2"/>
-
-  </svg>
-
-  `
-
-};
-
-
-/* =========================
-   FIT MODES
-========================= */
-
-const FIT_MODES = [
-
-  {
-    name:"Fit",
-    css:"mode-fit",
-    icon:FIT_ICONS.fit
-  },
-
-  {
-    name:"Fill",
-    css:"mode-fill",
-    icon:FIT_ICONS.fill
-  },
-
-  {
-    name:"Zoom",
-    css:"mode-zoom",
-    icon:FIT_ICONS.zoom
-  }
-
-];
-
-
-/* =========================
-   ADD FIT BUTTON
-========================= */
-
-function addFitButton(){
-
-  const panel =
-    playerContainer.querySelector(
-      ".shaka-controls-button-panel"
-    );
-
-
-  if(!panel){
-
-    console.warn(
-      "Shaka control panel not found"
-    );
-
-    return;
-
-  }
-
-
-  if(
-    panel.querySelector(
-      ".sp-fit-btn"
-    )
-  ){
-
-    return;
-
-  }
-
-
-  const fullscreen =
-    panel.querySelector(
-      ".shaka-fullscreen-button"
-    );
-
-
-  const button =
-    document.createElement(
-      "button"
-    );
-
-
-  button.className =
-    "sp-fit-btn";
-
-
-  button.type =
-    "button";
-
-
-  button.title =
-    "Video Fit: Fit";
-
-
-  button.innerHTML = `
-
-    <span class="fit-icon">
-      ${FIT_ICONS.fit}
-    </span>
-
-    <span class="fit-ratio">
-      --
-    </span>
-
-  `;
-
-
-  if(fullscreen){
-
-    panel.insertBefore(
-      button,
-      fullscreen
-    );
-
+   retryTimer = setTimeout(loadStream,Math.min(1000*retryCount,4000));
   }else{
-
-    panel.appendChild(
-      button
-    );
-
+   showNoStreamState(error);
   }
+ }
 
+ /* VIDEO EVENTS */
 
-  function applyFit(){
+ video.addEventListener('playing',() => {
+  clearTimeout(retryTimer);
+  onFirstPlayback();
+ });
 
-    const mode =
-      FIT_MODES[fitIndex];
-
-
-    video.classList.remove(
-      "mode-fit",
-      "mode-fill",
-      "mode-zoom"
-    );
-
-
-    video.classList.add(
-      mode.css
-    );
-
-
-    const icon =
-      button.querySelector(
-        ".fit-icon"
-      );
-
-
-    const ratio =
-      button.querySelector(
-        ".fit-ratio"
-      );
-
-
-    if(icon){
-
-      icon.innerHTML =
-        mode.icon;
-
-    }
-
-
-    if(ratio){
-
-      const r =
-        getRatio();
-
-      ratio.textContent =
-        r || "--";
-
-    }
-
-
-    button.title =
-      "Video Fit: " +
-      mode.name;
-
+ video.addEventListener('waiting',() => {
+  if(everPlayed){
+   statusEl.textContent = 'BUFFERING';
+   showLoader();
   }
+ });
 
-
-  button.addEventListener(
-    "click",
-    function(event){
-
-      event.preventDefault();
-
-      event.stopPropagation();
-
-
-      fitIndex++;
-
-      if(
-        fitIndex >=
-        FIT_MODES.length
-      ){
-
-        fitIndex = 0;
-
-      }
-
-
-      applyFit();
-
-    }
-  );
-
-
-  function updateRatio(){
-
-    const ratio =
-      button.querySelector(
-        ".fit-ratio"
-      );
-
-
-    if(ratio){
-
-      ratio.textContent =
-        getRatio() || "--";
-
-    }
-
+ video.addEventListener('stalled',() => {
+  if(everPlayed){
+   statusEl.textContent = 'BUFFERING';
+   showLoader();
   }
+ });
 
+ video.addEventListener('pause',() => {
+  releaseWakeLock();
 
-  video.addEventListener(
-    "loadedmetadata",
-    updateRatio
-  );
-
-
-  video.addEventListener(
-    "resize",
-    updateRatio
-  );
-
-
-  applyFit();
-
-}
-
-
-/* =========================
-   PIP BUTTON
-========================= */
-
-function addPipButton(){
-
-  const panel =
-    playerContainer.querySelector(
-      ".shaka-controls-button-panel"
-    );
-
-
-  if(!panel){
-
-    return;
-
+  if(everPlayed && !isRetrying){
+   userPaused = true;
   }
+ });
 
+ video.addEventListener('play',() => {
+  userPaused = false;
+  if(everPlayed) hideLoader();
+ });
 
-  if(
-    panel.querySelector(
-      ".sp-pip-btn"
-    )
-  ){
+ video.addEventListener('ended',releaseWakeLock);
 
-    return;
+ video.addEventListener('error',() => {
+  if(!video.error) return;
 
-  }
+  handleFault(new Error(
+   'Video playback error: '+video.error.message
+  ));
+ });
 
+ /* PLAYER INITIALIZATION */
 
-  const supported =
-    !!(
-      document.pictureInPictureEnabled
-      ||
-      (
-        video.webkitSupportsPresentationMode
-        &&
-        typeof
-        video.webkitSetPresentationMode
-        ===
-        "function"
-      )
-    );
-
-
-  if(!supported){
-
-    return;
-
-  }
-
-
-  const fitButton =
-    panel.querySelector(
-      ".sp-fit-btn"
-    );
-
-
-  const button =
-    document.createElement(
-      "button"
-    );
-
-
-  button.className =
-    "sp-pip-btn";
-
-
-  button.type =
-    "button";
-
-
-  button.title =
-    "Picture in Picture";
-
-
-  button.innerHTML = `
-
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      stroke-width="2">
-
-      <rect
-        x="3"
-        y="5"
-        width="18"
-        height="14"
-        rx="2"/>
-
-      <rect
-        x="12"
-        y="12"
-        width="7"
-        height="5"
-        rx="1"
-        fill="currentColor"
-        stroke="none"/>
-
-    </svg>
-
-  `;
-
-
-  if(fitButton){
-
-    panel.insertBefore(
-      button,
-      fitButton
-    );
-
-  }else{
-
-    panel.appendChild(
-      button
-    );
-
-  }
-
-
-  function setActive(active){
-
-    button.classList.toggle(
-      "active",
-      active
-    );
-
-
-    button.title =
-      active
-      ? "Exit Picture in Picture"
-      : "Picture in Picture";
-
-  }
-
-
-  button.addEventListener(
-    "click",
-    async function(event){
-
-      event.preventDefault();
-
-      event.stopPropagation();
-
-
-      try{
-
-        if(
-          document.pictureInPictureEnabled
-        ){
-
-          if(
-            document.pictureInPictureElement
-          ){
-
-            await document
-              .exitPictureInPicture();
-
-          }else{
-
-            await video
-              .requestPictureInPicture();
-
-          }
-
-        }
-
-        else if(
-          video.webkitSupportsPresentationMode
-        ){
-
-          video.webkitSetPresentationMode(
-
-            video.webkitPresentationMode
-            ===
-            "picture-in-picture"
-
-            ? "inline"
-
-            : "picture-in-picture"
-
-          );
-
-        }
-
-      }catch(error){
-
-        console.warn(
-          "PiP unavailable:",
-          error
-        );
-
-      }
-
-    }
-  );
-
-
-  video.addEventListener(
-    "enterpictureinpicture",
-    function(){
-
-      setActive(true);
-
-    }
-  );
-
-
-  video.addEventListener(
-    "leavepictureinpicture",
-    function(){
-
-      setActive(false);
-
-    }
-  );
-
-}
-
-
-/* =========================
-   SHAKA PLAYER
-========================= */
-
-async function startShaka(url){
-
-  showLoading(
-    "Starting Shaka Player..."
-  );
-
-
-  shaka.polyfill.installAll();
-
-
-  if(
-    !shaka.Player.isBrowserSupported()
-  ){
-
-    throw new Error(
-      "Shaka Player is not supported by this browser."
-    );
-
-  }
-
-
-  player =
-    new shaka.Player();
-
-
-  await player.attach(
-    video
-  );
-
-
-  /* -------------------------
-     UI
-  ------------------------- */
-
-  new shaka.ui.Overlay(
-    player,
-    playerContainer,
-    video
-  ).configure({
-
-    controlPanelElements:[
-
-      "play_pause",
-
-      "mute",
-
-      "volume",
-
-      "time_and_duration",
-
-      "spacer",
-
-      "quality",
-
-      "fullscreen",
-
-      "overflow_menu"
-
-    ],
-
-
-    overflowMenuButtons:[
-
-      "quality",
-
-      "picture_in_picture",
-
-      "loop",
-
-      "playback_rate"
-
-    ],
-
-
-    seekBarColors:{
-
-      base:"#777",
-
-      buffered:"#7f1d1d",
-
-      played:"#ef4444"
-
-    }
-
-  });
-
-
-  /*
-   * Wait for Shaka controls
-   */
-
-  setTimeout(
-    function(){
-
-      addFitButton();
-
-      addPipButton();
-
-    },
-    500
-  );
-
-
-  /* -------------------------
-     Config
-  ------------------------- */
-
-  player.configure({
-
-    streaming:{
-
-      lowLatencyMode:false,
-
-      bufferingGoal:10,
-
-      rebufferingGoal:2,
-
-      bufferBehind:30,
-
-      safeSeekOffset:4,
-
-      stallEnabled:true,
-
-      stallThreshold:2,
-
-      retryParameters:{
-
-        maxAttempts:5,
-
-        baseDelay:500,
-
-        backoffFactor:2,
-
-        fuzzFactor:.5,
-
-        timeout:30000
-
-      }
-
-    },
-
-
-    manifest:{
-
-      ignoreTextStreamFailures:true,
-
-      retryParameters:{
-
-        maxAttempts:5,
-
-        baseDelay:500,
-
-        backoffFactor:2,
-
-        fuzzFactor:.5,
-
-        timeout:30000
-
-      }
-
-    },
-
-
-    abr:{
-
-      enabled:true,
-
-      defaultBandwidthEstimate:2000000,
-
-      switchInterval:4
-
-    }
-
-  });
-
-
-  /* -------------------------
-     Shaka Errors
-  ------------------------- */
-
-  player.addEventListener(
-    "error",
-    function(event){
-
-      console.error(
-        "Shaka error:",
-        event.detail
-      );
-
-    }
-  );
-
-
-  /* -------------------------
-     LOAD
-  ------------------------- */
-
-  await player.load(
-    url
-  );
-
-
-  hideLoading();
-
-
-  // Force autoplay after load
-  try {
-    await video.play();
-  } catch (e) {
-    console.warn("Autoplay blocked, waiting for user interaction");
-  }
-
-}
-
-
-/* =========================
-   NATIVE HLS
-========================= */
-
-async function startNativeHLS(url){
-
-  showLoading(
-    "Starting HLS..."
-  );
-
-
-  video.controls =
-    true;
-
-
-  video.src =
-    url;
-
-
-  return new Promise(
-    function(resolve,reject){
-
-      function success(){
-
-        hideLoading();
-
-        video.play().catch(
-          function(){}
-        );
-
-        resolve();
-
-      }
-
-
-      function failed(){
-
-        reject(
-          new Error(
-            "Native HLS playback failed."
-          )
-        );
-
-      }
-
-
-      video.addEventListener(
-        "loadedmetadata",
-        success,
-        {once:true}
-      );
-
-
-      video.addEventListener(
-        "error",
-        failed,
-        {once:true}
-      );
-
-    }
-  );
-
-}
-
-
-/* =========================
-   DESTROY
-========================= */
-
-async function destroyPlayer(){
-
-  if(player){
-
-    try{
-
-      await player.destroy();
-
-    }catch(error){
-
-      console.warn(
-        error
-      );
-
-    }
-
-    player =
-      null;
-
-  }
-
-
-  video.pause();
-
-  video.removeAttribute(
-    "src"
-  );
-
-
+ async function initializePlayer(){
   try{
+   if(!window.shaka){
+    throw new Error('Shaka Player library failed to load.');
+   }
 
+   shaka.polyfill.installAll();
+
+   if(!shaka.Player.isBrowserSupported()){
+    throw new Error('This browser does not support Shaka Player.');
+   }
+
+   /* DIRECT FILE */
+
+   if(isDirectFile(streamType)){
+    isNative = true;
+    wrapper.classList.add('native-mode');
+    video.controls = true;
+    video.src = streamSource;
     video.load();
 
-  }catch(error){}
-
-}
-
-
-/* =========================
-   START PLAYER
-========================= */
-
-async function startPlayer(){
-
-  hideError();
-
-  showLoading(
-    "Loading stream..."
-  );
-
-
-  const url =
-    getStreamURL();
-
-
-  if(!url){
-
-    showError(
-      "No stream URL was provided.\n\n" +
-      "Example:\n" +
-      "?url=https://example.com/live/index.m3u8"
-    );
-
+    const result = video.play();
+    if(result && result.catch){
+     await result.catch(error => {
+      console.warn('[RS Player] Autoplay blocked:',error);
+     });
+    }
     return;
+   }
 
-  }
+   /* SHAKA */
 
+   player = new shaka.Player();
+   await player.attach(video);
 
-  streamURL =
-    url;
-
-
-  console.log(
-    "Stream:",
-    streamURL
-  );
-
-
-  await destroyPlayer();
-
-
-  /*
-   * M3U8
-   */
-
-  if(isM3U8(url)){
-
-    try{
-
-      /*
-       * First Shaka
-       */
-
-      await startShaka(
-        url
-      );
-
-      return;
-
-    }catch(error){
-
-      console.warn(
-        "Shaka HLS failed:",
-        error
-      );
-
-
-      await destroyPlayer();
-
-
-      /*
-       * Native HLS fallback
-       */
-
-      if(
-        video.canPlayType(
-          "application/vnd.apple.mpegurl"
-        )
-      ){
-
-        try{
-
-          await startNativeHLS(
-            url
-          );
-
-          return;
-
-        }catch(nativeError){
-
-          console.warn(
-            nativeError
-          );
-
-        }
-
-      }
-
-
-      showError(
-        "M3U8 stream could not be played.\n\n" +
-        "Possible reasons:\n" +
-        "• CORS restriction\n" +
-        "• Stream is offline\n" +
-        "• Authentication/token required\n" +
-        "• Playlist or segments unavailable"
-      );
-
-
-      return;
-
+   player.configure({
+    streaming:{
+     bufferingGoal:20,
+     rebufferingGoal:2,
+     bufferBehind:30,
+     retryParameters:{
+      maxAttempts:3,
+      baseDelay:1000,
+      backoffFactor:2,
+      fuzzFactor:0.5
+     }
     }
+   });
 
-  }
+   ui = new shaka.ui.Overlay(player,videoContainer,video);
 
+   ui.configure({
+    controlPanelElements:[
+     'play_pause',
+     'time_and_duration',
+     'spacer',
+     'mute',
+     'volume',
+     'fullscreen'
+    ],
+    overflowMenuButtons:[
+     'quality',
+     'language',
+     'captions',
+     'playback_rate'
+    ]
+   });
 
-  /*
-   * MPD
-   */
+   video.controls = false;
 
-  if(isMPD(url)){
+   player.addEventListener('error',event => {
+    console.error('[RS Player] Shaka error:',event.detail);
 
-    try{
+    handleFault(new Error(
+     'Shaka playback error: '+
+     (event.detail && event.detail.message
+      ? event.detail.message
+      : 'Stream error')
+    ));
+   });
 
-      await startShaka(
-        url
-      );
-
-      return;
-
-    }catch(error){
-
-      console.error(
-        error
-      );
-
-
-      showError(
-        "MPD/DASH playback failed.\n\n" +
-        (
-          error.message
-          ||
-          "Unknown error"
-        )
-      );
-
-
-      return;
-
+   player.addEventListener('buffering',event => {
+    if(event.buffering && everPlayed){
+     statusEl.textContent = 'BUFFERING';
+     showLoader();
     }
+   });
 
-  }
+   await player.load(streamSource);
+   applyVideoStyle();
 
+   const result = video.play();
+   if(result && result.catch){
+    await result.catch(error => {
+     console.warn('[RS Player] Autoplay blocked:',error);
+    });
+   }
 
-  /*
-   * Unknown format
-   */
-
-  try{
-
-    await startShaka(
-      url
-    );
+   console.log('[RS Player] Shaka ready:',streamType || 'auto');
 
   }catch(error){
+   console.error('[RS Player] setup error:',error);
+   handleFault(error);
+  }
+ }
 
-    console.error(
-      error
-    );
+ /* FULLSCREEN + LANDSCAPE */
 
+ async function lockLandscape(){
+  try{
+   if(screen.orientation &&
+      typeof screen.orientation.lock === 'function'){
+    await screen.orientation.lock('landscape');
+   }
+  }catch(error){
+   console.log('[RS Player] Landscape lock unavailable:',error);
+  }
+ }
 
-    showError(
-      "Unable to play this stream.\n\n" +
-      (
-        error.message
-        ||
-        "Unknown error"
-      )
-    );
+ function unlockLandscape(){
+  try{
+   if(screen.orientation &&
+      typeof screen.orientation.unlock === 'function'){
+    screen.orientation.unlock();
+   }
+  }catch(e){}
+ }
 
+ function checkFullscreen(){
+  const fullscreen =
+   document.fullscreenElement ||
+   document.webkitFullscreenElement;
+
+  if(fullscreen){
+   lockLandscape();
+  }else{
+   unlockLandscape();
   }
 
+  requestAnimationFrame(applyVideoStyle);
+ }
+
+ document.addEventListener('fullscreenchange',checkFullscreen);
+ document.addEventListener('webkitfullscreenchange',checkFullscreen);
+
+ if(screen.orientation){
+  screen.orientation.addEventListener('change',() => {
+   if(document.fullscreenElement ||
+      document.webkitFullscreenElement){
+    requestAnimationFrame(applyVideoStyle);
+   }
+  });
+ }
+
+ /* INITIAL TIMEOUT */
+
+ noStreamTimer = setTimeout(() => {
+  if(!everPlayed){
+   showNoStreamState(
+    new Error('Stream did not start within 12 seconds.')
+   );
+  }
+ },NO_STREAM_TIMEOUT);
+
+ /* TOUCH SAFETY */
+
+ videoContainer.addEventListener('contextmenu',event => {
+  event.preventDefault();
+ },{passive:false});
+
+ /* VIDEO STYLE OBSERVER */
+
+ const observer = new MutationObserver(applyVideoStyle);
+
+ observer.observe(videoContainer,{
+  childList:true,
+  subtree:true
+ });
+
+ /* START */
+
+ applyVideoStyle();
+ initializePlayer();
+
+ /* CLEANUP */
+
+ window.addEventListener('pagehide',() => {
+  destroyed = true;
+
+  clearTimeout(retryTimer);
+  clearTimeout(noStreamTimer);
+  clearInterval(statusTimer);
+
+  releaseWakeLock();
+
+  observer.disconnect();
+
+  if(player){
+   try{player.destroy();}catch(e){}
+  }
+ });
 }
-
-
-/* =========================
-   RETRY
-========================= */
-
-retryButton.addEventListener(
-  "click",
-  function(){
-
-    startPlayer();
-
-  }
-);
-
-
-/* =========================
-   BUFFER RECOVERY
-========================= */
-
-video.addEventListener(
-  "waiting",
-  function(){
-
-    console.log(
-      "Buffering..."
-    );
-
-  }
-);
-
-
-video.addEventListener(
-  "playing",
-  function(){
-
-    hideLoading();
-
-  }
-);
-
-
-/* =========================
-   VISIBILITY
-========================= */
-
-document.addEventListener(
-  "visibilitychange",
-  function(){
-
-    if(!document.hidden){
-
-      setTimeout(
-        function(){
-
-          if(
-            video.paused &&
-            streamURL
-          ){
-
-            video.play().catch(
-              function(){}
-            );
-
-          }
-
-        },
-        500
-      );
-
-    }
-
-  }
-);
-
-
-/* =========================
-   START
-========================= */
-
-document.addEventListener(
-  "DOMContentLoaded",
-  function(){
-
-    startPlayer();
-
-  }
-);
-
-
-})();
-
 </script>
 
 </body>
